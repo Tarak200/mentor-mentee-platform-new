@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor-Mentee Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to Mentor-Mentee Platform</h1>
+            <p>Connect, Learn, and Grow Together</p>
+        </header>
+        
+        <main class="selection-container">
+            <div class="selection-card">
+                <div class="card mentor-card">
+                    <div class="card-icon">
+                        <i class="icon-mentor">👨‍🏫</i>
+                    </div>
+                    <h2>I'm a Mentor</h2>
+                    <p>Share your knowledge and help mentees achieve their goals</p>
+                    <ul>
+                        <li>Set your own hourly rates</li>
+                        <li>Choose your schedule</li>
+                        <li>Connect with eager learners</li>
+                        <li>Build your reputation</li>
+                    </ul>
+                    <button class="btn btn-mentor" onclick="selectUserType('mentor')">
+                        Get Started as Mentor
+                    </button>
+                </div>
+            </div>
+            
+            <div class="selection-card">
+                <div class="card mentee-card">
+                    <div class="card-icon">
+                        <i class="icon-mentee">👨‍🎓</i>
+                    </div>
+                    <h2>I'm a Mentee</h2>
+                    <p>Learn from experienced mentors and accelerate your growth</p>
+                    <ul>
+                        <li>Find expert mentors</li>
+                        <li>Flexible scheduling</li>
+                        <li>Personalized guidance</li>
+                        <li>Affordable rates</li>
+                    </ul>
+                    <button class="btn btn-mentee" onclick="selectUserType('mentee')">
+                        Get Started as Mentee
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <section class="features">
+            <h2>Why Choose Our Platform?</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h3>🔒 Secure</h3>
+                    <p>Your data and payments are protected</p>
+                </div>
+                <div class="feature-item">
+                    <h3>💰 Transparent</h3>
+                    <p>Clear pricing with no hidden fees</p>
+                </div>
+                <div class="feature-item">
+                    <h3>⭐ Quality</h3>
+                    <p>Review system ensures quality mentoring</p>
+                </div>
+                <div class="feature-item">
+                    <h3>🌍 Global</h3>
+                    <p>Connect with mentors worldwide</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function selectUserType(type) {
+            localStorage.setItem('selectedUserType', type);
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

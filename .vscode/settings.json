@@ -1,0 +1,29 @@
+{
+    "files.associations": {
+        "*.db": "sqlite",
+        "*.sqlite": "sqlite",
+        "*.sqlite3": "sqlite"
+    },
+    "sqlite.databaseExtensions": [
+        "db",
+        "sqlite",
+        "sqlite3"
+    ],
+    "sqlite.defaultDatabase": "backend/data/mentorship.db",
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "*.db": "*.db-*,*.sqlite,*.sqlite3",
+        "package.json": "package-lock.json,npm-shrinkwrap.json,yarn.lock"
+    },
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true
+    }
+}

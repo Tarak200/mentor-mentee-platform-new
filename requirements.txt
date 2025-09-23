@@ -1,0 +1,37 @@
+# Mentor-Mentee Platform Dependencies
+# This is a Node.js project - use 'npm install' instead of pip
+
+# Core Framework
+express@^4.18.2
+
+# Database
+sqlite3@^5.1.6
+
+# Authentication & Security
+bcrypt@^5.1.1
+jsonwebtoken@^9.0.2
+passport@^0.6.0
+passport-google-oauth20@^2.0.0
+express-session@^1.17.3
+
+# Utilities
+cors@^2.8.5
+dotenv@^16.3.1
+multer@^1.4.5-lts.1
+path@^0.12.7
+
+# Development Dependencies
+nodemon@^3.0.1
+
+# System Requirements:
+# - Node.js >= 14.0.0
+# - npm >= 6.0.0
+
+# Installation Commands:
+# npm install                    (install all dependencies)
+# npm run init-db               (initialize database)
+# npm start                     (start production server)
+# npm run dev                   (start development server)
+
+# Note: This is a Node.js project, not Python
+# Use package.json and npm commands instead of pip

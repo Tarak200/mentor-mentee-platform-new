@@ -1,0 +1,136 @@
+const express = require('express');
+const path = require('path');
+require('dotenv').config();
+
+const app = express();
+let port = Number(process.env.PORT) || 3000;
+
+// Import middleware
+const corsMiddleware = require('./middleware/cors');
+const authMiddleware = require('./middleware/auth');
+const sessionMiddleware = require('./middleware/session');
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const mentorRoutes = require('./routes/mentor');
+const menteeRoutes = require('./routes/mentee');
+const sessionRoutes = require('./routes/sessions');
+const reviewRoutes = require('./routes/reviews');
+const fileRoutes = require('./routes/files');
+const userRoutes = require('./routes/user');
+const notificationRoutes = require('./routes/notifications');
+const securityRoutes = require('./routes/security');
+
+// Apply middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(corsMiddleware);
+
+// Configure static file serving with proper MIME types
+app.use(express.static(path.join(__dirname, '..', 'frontend'), {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        } else if (filePath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+        } else if (filePath.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        }
+    }
+}));
+
+app.use(sessionMiddleware);
+
+// Apply routes
+app.use('/api/auth', authRoutes);
+app.use('/api/mentor', mentorRoutes);
+app.use('/api/mentee', menteeRoutes);
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/security', securityRoutes);
+
+// Serve frontend pages
+app.get('/', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'home', 'home.html'));
+});
+
+// Mentor routes
+app.get('/mentor/login', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentor', 'login', 'mentor-login.html'));
+});
+
+// Mentee routes
+app.get('/mentee/login', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'login', 'mentee-login.html'));
+});
+
+app.get('/mentor-dashboard', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentor', 'dashboard', 'mentor-dashboard.html'));
+});
+
+app.get('/mentee-dashboard', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'dashboard', 'mentee-dashboard.html'));
+});
+
+// Platform configuration endpoint
+app.get('/api/platform-config', (req, res) => {
+    res.json({
+        commissionPercentage: 10,
+        upiId: 'platform@upi'
+    });
+});
+
+// Profile picture upload endpoint (basic stub)
+app.post('/api/upload-profile-pic', sessionMiddleware, (req, res) => {
+    // This is a basic stub - in a real app you'd handle file upload properly
+    res.json({
+        success: true,
+        profilePicture: '/uploads/default-avatar.png',
+        message: 'Profile picture updated successfully'
+    });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
+
+function startServer(desiredPort, maxAttempts = 10) {
+    let attempts = 0;
+    function tryListen(p) {
+        const server = app.listen(p, () => {
+            console.log(`Server running on port ${p}`);
+            console.log(`Access the application at http://localhost:${p}`);
+        });
+        server.on('error', (err) => {
+            if (err && err.code === 'EADDRINUSE' && attempts < maxAttempts) {
+                attempts += 1;
+                const nextPort = p + 1;
+                console.warn(`Port ${p} in use, trying ${nextPort}...`);
+                tryListen(nextPort);
+            } else {
+                console.error('Failed to start server:', err);
+                process.exitCode = 1;
+            }
+        });
+    }
+    tryListen(desiredPort);
+}
+
+startServer(port);
+
+module.exports = app;

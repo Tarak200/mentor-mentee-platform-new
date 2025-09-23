@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor Dashboard - Expert Mentoring Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="mentor-body">
+    <div class="mentor-dashboard">
+        <!-- Enhanced Top Navigation Bar -->
+        <header class="mentor-header">
+            <div class="logo-section">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <h2>MentorPro</h2>
+            </div>
+            
+            <div class="header-center">
+                <div class="welcome-message">
+                    <h3>Hello, <span id="userName">Loading...</span>! 👋</h3>
+                    <p>Ready to inspire minds today?</p>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="header-actions">
+                    <button class="header-btn" onclick="showCustomerCare()" title="Customer Care">
+                        <i class="fas fa-headset"></i>
+                    </button>
+                    <div class="user-profile">
+                        <img id="profilePic" class="profile-avatar" src="/uploads/default-avatar.png" alt="Profile">
+                        <div class="profile-dropdown">
+                            <button class="profile-btn" onclick="toggleProfileMenu()">
+                                <span id="userNameShort">Me</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="profileMenu" class="profile-menu">
+                                <a href="#" onclick="showSection('profile')"><i class="fas fa-user"></i> My Profile</a>
+                                <a href="#" onclick="showCustomerCare()"><i class="fas fa-headset"></i> Customer Care</a>
+                                <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="mentor-main">
+            <!-- Quick Stats Bar -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <i class="fas fa-user-clock"></i>
+                    <div>
+                        <span id="totalRequests">0</span>
+                        <label>Connection Requests</label>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-calendar-check"></i>
+                    <div>
+                        <span id="upcomingSessions">0</span>
+                        <label>Future Calls</label>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-rupee-sign"></i>
+                    <div>
+                        <span id="totalEarnings">₹0</span>
+                        <label>Balance to Receive</label>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-trophy"></i>
+                    <div>
+                        <span id="completedSessions">0</span>
+                        <label>Completed Sessions</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="showSection('requests')">
+                    <i class="fas fa-user-plus"></i> Connection Requests
+                </button>
+                <button class="tab-btn" onclick="showSection('sessions')">
+                    <i class="fas fa-calendar"></i> My Sessions
+                </button>
+                <button class="tab-btn" onclick="showSection('earnings')">
+                    <i class="fas fa-wallet"></i> Earnings
+                </button>
+                <button class="tab-btn" onclick="showSection('profile')">
+                    <i class="fas fa-user"></i> My Profile
+                </button>
+            </div>
+
+            <!-- Connection Requests Section -->
+            <section id="requestsSection" class="requests-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-plus"></i> Mentees Who Want to Connect</h2>
+                    <p>Review connection requests and choose who you'd like to mentor</p>
+                </div>
+                
+                <div id="requestsList" class="requests-grid">
+                    <div class="loading-requests">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading connection requests...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sessions Section -->
+            <section id="sessionsSection" class="sessions-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-alt"></i> My Teaching Sessions</h2>
+                    <p>Track your scheduled and completed mentoring sessions</p>
+                </div>
+                
+                <div class="sessions-summary">
+                    <div class="summary-card">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <h3 id="futureCalls">0</h3>
+                            <p>Future Calls Planned</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <i class="fas fa-video"></i>
+                        <div>
+                            <h3 id="todaySessions">0</h3>
+                            <p>Sessions Today</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="sessionsList" class="sessions-list">
+                    <div class="loading-sessions">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading your teaching sessions...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Earnings Section -->
+            <section id="earningsSection" class="earnings-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> My Earnings</h2>
+                    <p>Track your mentoring income and balance</p>
+                </div>
+                
+                <div class="earnings-summary">
+                    <div class="earnings-card primary">
+                        <div class="earning-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="earning-details">
+                            <h3 id="totalEarningsDetailed">₹0</h3>
+                            <p>Total Balance to Receive</p>
+                            <small>After 10% platform commission</small>
+                        </div>
+                    </div>
+                    
+                    <div class="earnings-card">
+                        <div class="earnings-card primary">
+                            <div class="earning-icon">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+                            <div class="earning-details">
+                                <h3 id="pendingEarnings">₹0</h3>
+                                <p>Pending from Future Calls</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="earnings-card">
+                        <div class="earnings-card primary">
+                            <div class="earning-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div class="earning-details">
+                                <h3 id="sessionsCount">0</h3>
+                                <p>Total Sessions Completed</p>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                <div class="payment-info-card">
+                    <div class="payment-header">
+                        <i class="fas fa-university"></i>
+                        <h3>Payment Information</h3>
+                    </div>
+                    <div class="payment-details">
+                        <div class="payment-item">
+                            <label>Your UPI ID:</label>
+                            <div class="upi-info">
+                                <code id="mentorUpiId">Loading...</code>
+                                <button onclick="copyMentorUpi()" class="copy-btn" title="Copy UPI ID">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="payment-item">
+                            <label>Commission Structure:</label>
+                            <span class="commission-info">Platform takes <span class="commission-percentage">10%</span> • You receive <span class="mentor-percentage">90%</span></span>
+                        </div>
+                        <div class="payment-item">
+                            <label>Payment Timeline:</label>
+                            <span>Earnings transferred within 24 hours after session completion</span>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-process">
+                        <h4><i class="fas fa-info-circle"></i> How Payment Works</h4>
+                        <div class="process-steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <p>Mentee pays full amount to platform</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <p>Session completed successfully</p>
+                            </div>
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <p><span class="mentor-percentage">90%</span> transferred to your UPI within 24 hours</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile Section -->
+            <section id="profileSection" class="profile-section" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-circle"></i> My Mentor Profile</h2>
+                    <p>Manage your professional profile and teaching credentials</p>
+                </div>
+                
+                <div class="profile-content">
+                    <div class="profile-card">
+                        <div class="profile-picture-section">
+                            <img id="profilePicLarge" src="/uploads/default-avatar.png" alt="Profile Picture">
+                            <div class="profile-upload">
+                                <input type="file" id="profilePicUpload" accept="image/*" hidden>
+                                <button onclick="document.getElementById('profilePicUpload').click()" class="btn btn-upload">
+                                    <i class="fas fa-camera"></i> Update Photo
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="profileDetails" class="profile-details">
+                            <div class="loading-profile">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading your profile...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <!-- Accept Request Modal -->
+        <div id="acceptModal" class="modal" style="display: none;">
+            <div class="modal-overlay" onclick="closeModal()"></div>
+            <div class="modal-content accept-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-calendar-plus"></i> Schedule Mentoring Session</h3>
+                    <button onclick="closeModal()" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                
+                <div class="mentee-preview" id="selectedMenteePreview">
+                    <!-- Mentee details will be populated here -->
+                </div>
+                
+                <form id="acceptForm">
+                    <div class="form-group">
+                        <label for="meetingTime"><i class="fas fa-clock"></i> Meeting Date & Time</label>
+                        <input type="datetime-local" id="meetingTime" required>
+                        <small>Select a convenient time for both you and your mentee</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="meetingLink"><i class="fas fa-video"></i> Meeting Link</label>
+                        <input type="url" id="meetingLink" placeholder="https://meet.google.com/..." required>
+                        <small>Google Meet, Zoom, or any video conferencing link</small>
+                    </div>
+                    
+                    <div class="session-note">
+                        <i class="fas fa-info-circle"></i>
+                        <p><strong>Note:</strong> Once you accept, the mentee will be notified and must pay before the session starts. You'll receive <span class="mentor-percentage">90%</span> of the session fee after completion.</p>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="submit" class="btn btn-accept">
+                            <i class="fas fa-check-circle"></i> Accept & Schedule
+                        </button>
+                        <button type="button" onclick="closeModal()" class="btn btn-cancel">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Customer Care Modal -->
+        <div id="customerCareModal" class="modal" style="display: none;">
+            <div class="modal-overlay" onclick="closeCustomerCare()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-headset"></i> Customer Care</h3>
+                    <button onclick="closeCustomerCare()" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="customer-care-content">
+                    <div class="contact-option">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <h4>Email Support</h4>
+                            <p>mentorsupport@platform.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-option">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <h4>Phone Support</h4>
+                            <p>+91-1800-123-4567 (Mon-Fri, 9 AM - 6 PM)</p>
+                        </div>
+                    </div>
+                    <div class="contact-option">
+                        <i class="fas fa-comments"></i>
+                        <div>
+                            <h4>Live Chat</h4>
+                            <p>Available 24/7 for mentor support</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accept Request Modal -->
+    <div id="acceptModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Accept Request</h3>
+            <form id="acceptForm">
+                <div class="form-group">
+                    <label for="meetingTime">Meeting Date & Time</label>
+                    <input type="datetime-local" id="meetingTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="meetingLink">Meeting Link</label>
+                    <input type="url" id="meetingLink" placeholder="https://meet.google.com/..." required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-accept">Schedule Session</button>
+                    <button type="button" onclick="closeModal()" class="btn btn-reject">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+    <div id="successMessage" class="success-message" style="display: none;"></div>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .recent-activity {
+            margin-top: 30px;
+        }
+        
+        .earnings-summary {
+            margin-bottom: 30px;
+        }
+        
+        .payment-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+    </style>
+
+    <script>
+        let currentRequestId = null;
+
+        // Check authentication
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        // Load dashboard data
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadProfile();
+            await loadRequests();
+            await loadSessions();
+            await loadEarnings();
+            await loadPlatformConfig();
+        });
+        
+        // Load platform configuration
+        async function loadPlatformConfig() {
+            try {
+                const response = await fetch('/api/platform-config');
+                if (response.ok) {
+                    const config = await response.json();
+                    
+                    // Update commission displays
+                    const commissionElements = document.querySelectorAll('.commission-percentage');
+                    commissionElements.forEach(el => {
+                        el.textContent = `${config.commissionPercentage}%`;
+                    });
+                    
+                    const mentorPercentage = 100 - config.commissionPercentage;
+                    const mentorElements = document.querySelectorAll('.mentor-percentage');
+                    mentorElements.forEach(el => {
+                        el.textContent = `${mentorPercentage}%`;
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading platform config:', error);
+            }
+        }
+        
+        // Profile menu toggle
+        function toggleProfileMenu() {
+            const menu = document.getElementById('profileMenu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Close profile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.profile-dropdown')) {
+                document.getElementById('profileMenu').style.display = 'none';
+            }
+        });
+
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    document.getElementById('userName').textContent = user.first_name;
+                    document.getElementById('userNameShort').textContent = user.first_name;
+                    document.getElementById('mentorUpiId').textContent = user.upi_id || 'Not set';
+                    
+                    if (user.profile_picture) {
+                        document.getElementById('profilePic').src = user.profile_picture;
+                        document.getElementById('profilePicLarge').src = user.profile_picture;
+                    }
+                    
+                    // Display enhanced profile details
+                    const profileDetails = `
+                        <div class="profile-grid">
+                            <div class="profile-item">
+                                <label>Full Name</label>
+                                <span>${user.first_name} ${user.last_name}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Email</label>
+                                <span>${user.email}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Age</label>
+                                <span>${user.age || 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Education</label>
+                                <span>${user.education || 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Institution</label>
+                                <span>${user.institution || 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Current Pursuit</label>
+                                <span>${user.current_pursuit || 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Hourly Rate</label>
+                                <span class="price-highlight">₹${user.hourly_rate}/hour</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Languages</label>
+                                <span>${user.languages ? user.languages.join(', ') : 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Teaching Subjects</label>
+                                <span>${user.subjects ? user.subjects.join(', ') : 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Available Hours</label>
+                                <span>${user.available_hours ? user.available_hours.join(', ') : 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Mobile Number</label>
+                                <span>${user.mobile_number || 'Not specified'}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>UPI ID</label>
+                                <span>${user.upi_id || 'Not set'}</span>
+                            </div>
+                            ${user.qualifications ? `
+                                <div class="profile-item full-width">
+                                    <label>Qualifications & Experience</label>
+                                    <span>${user.qualifications}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    document.getElementById('profileDetails').innerHTML = profileDetails;
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        async function loadRequests() {
+            try {
+                const response = await fetch('/api/connection-requests', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const requests = await response.json();
+                    document.getElementById('totalRequests').textContent = requests.length;
+                    
+                    if (requests.length === 0) {
+                        document.getElementById('requestsList').innerHTML = `
+                            <div class="no-requests">
+                                <i class="fas fa-user-clock"></i>
+                                <h3>No Connection Requests</h3>
+                                <p>When mentees want to connect with you, they'll appear here</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const requestsHtml = requests.map(request => `
+                        <div class="mentee-request-card enhanced">
+                            <div class="mentee-header">
+                                <img src="${request.profile_picture || '/uploads/default-avatar.png'}" alt="${request.first_name}">
+                                <div class="mentee-basic">
+                                    <h3>${request.first_name} ${request.last_name}</h3>
+                                    <div class="mentee-info">
+                                        <span><i class="fas fa-envelope"></i> ${request.email}</span>
+                                    </div>
+                                </div>
+                                <div class="request-time">
+                                    <small><i class="fas fa-clock"></i> ${new Date(request.created_at).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mentee-details">
+                                <div class="detail-section">
+                                    <h4><i class="fas fa-book"></i> Wants to Learn:</h4>
+                                    <p class="subject-highlight">${request.subject}</p>
+                                </div>
+                                
+                                ${request.message ? `
+                                    <div class="detail-section">
+                                        <h4><i class="fas fa-comment"></i> Message:</h4>
+                                        <p class="mentee-message">${request.message}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="mentee-preferences">
+                                    <div class="preference-item">
+                                        <i class="fas fa-clock"></i>
+                                        <label>Preferred Time:</label>
+                                        <span>${request.preferred_time || 'Flexible'}</span>
+                                    </div>
+                                    <div class="preference-item">
+                                        <i class="fas fa-star"></i>
+                                        <label>Interests:</label>
+                                        <span>${request.interests ? request.interests.join(', ') : 'General learning'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="request-actions">
+                                <button class="btn btn-accept" onclick="acceptRequest(${request.id}, '${request.first_name} ${request.last_name}', '${request.subject}')">
+                                    <i class="fas fa-check-circle"></i> Accept Request
+                                </button>
+                                <button class="btn btn-reject" onclick="rejectRequest(${request.id})">
+                                    <i class="fas fa-times-circle"></i> Decline
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('requestsList').innerHTML = requestsHtml;
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const sessions = await response.json();
+                    document.getElementById('upcomingSessions').textContent = sessions.length;
+                    
+                    const sessionsHtml = sessions.length > 0 ?
+                        sessions.map(session => `
+                            <div class="session-card">
+                                <div class="session-info">
+                                    <div>
+                                        <strong>Mentee:</strong> ${session.mentee_first_name} ${session.mentee_last_name}
+                                    </div>
+                                    <div>
+                                        <strong>Subject:</strong> ${session.subject}
+                                    </div>
+                                    <div>
+                                        <strong>Date & Time:</strong> ${new Date(session.scheduled_time).toLocaleString()}
+                                    </div>
+                                    <div>
+                                        <strong>Amount:</strong> ₹${session.amount}
+                                    </div>
+                                </div>
+                                ${session.meeting_link ? `<p><strong>Meeting Link:</strong> <a href="${session.meeting_link}" target="_blank">${session.meeting_link}</a></p>` : ''}
+                            </div>
+                        `).join('') :
+                        '<p>No scheduled sessions</p>';
+                    
+                    document.getElementById('sessionsList').innerHTML = sessionsHtml;
+                }
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        async function loadEarnings() {
+            try {
+                const response = await fetch('/api/mentor/earnings', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const earnings = await response.json();
+                    document.getElementById('totalEarnings').textContent = `₹${earnings.total_earnings || 0}`;
+                    document.getElementById('totalEarningsDetailed').textContent = `₹${earnings.total_earnings || 0}`;
+                    document.getElementById('pendingEarnings').textContent = `₹${earnings.pending_earnings || 0}`;
+                    document.getElementById('completedSessions').textContent = earnings.total_sessions || 0;
+                    document.getElementById('sessionsCount').textContent = earnings.total_sessions || 0;
+                }
+            } catch (error) {
+                console.error('Error loading earnings:', error);
+            }
+        }
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.dashboard-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(`${sectionName}Section`).style.display = 'block';
+        }
+
+        function acceptRequest(requestId, menteeName, subject) {
+            currentRequestId = requestId;
+            
+            // Show mentee preview in modal
+            document.getElementById('selectedMenteePreview').innerHTML = `
+                <div class="mentee-preview-card">
+                    <div class="preview-header">
+                        <i class="fas fa-user-graduate"></i>
+                        <div>
+                            <h4>${menteeName}</h4>
+                            <p>Wants to learn: <span class="subject">${subject}</span></p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('acceptModal').style.display = 'flex';
+            
+            // Set minimum datetime to current time
+            const now = new Date();
+            const minDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('meetingTime').min = minDateTime;
+        }
+
+        function closeModal() {
+            document.getElementById('acceptModal').style.display = 'none';
+            currentRequestId = null;
+        }
+
+        document.getElementById('acceptForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const meetingTime = document.getElementById('meetingTime').value;
+            const meetingLink = document.getElementById('meetingLink').value;
+            
+            try {
+                const response = await fetch(`/api/connection-request/${currentRequestId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'accepted',
+                        meetingTime: meetingTime,
+                        meetingLink: meetingLink
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Request accepted and session scheduled!', 'success');
+                    closeModal();
+                    await loadRequests();
+                    await loadSessions();
+                } else {
+                    showMessage(result.message || 'Error accepting request', 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred', 'error');
+            }
+        });
+
+        async function rejectRequest(requestId) {
+            if (!confirm('Are you sure you want to reject this request?')) return;
+            
+            try {
+                const response = await fetch(`/api/connection-request/${requestId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'rejected'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Request rejected', 'success');
+                    await loadRequests();
+                } else {
+                    showMessage(result.message || 'Error rejecting request', 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred', 'error');
+            }
+        }
+
+        async function uploadProfilePic() {
+            const fileInput = document.getElementById('profilePicUpload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('Please select a file', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('profilePic', file);
+            
+            try {
+                const response = await fetch('/api/upload-profile-pic', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Profile picture updated!', 'success');
+                    document.getElementById('profilePic').src = result.profilePicture;
+                } else {
+                    showMessage(result.message || 'Error uploading file', 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred', 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        // Show customer care modal
+        function showCustomerCare() {
+            document.getElementById('customerCareModal').style.display = 'flex';
+        }
+        
+        // Close customer care modal
+        function closeCustomerCare() {
+            document.getElementById('customerCareModal').style.display = 'none';
+        }
+        
+        // Copy mentor UPI ID
+        function copyMentorUpi() {
+            const upiId = document.getElementById('mentorUpiId').textContent;
+            navigator.clipboard.writeText(upiId).then(() => {
+                showMessage('UPI ID copied to clipboard! 📋', 'success');
+            });
+        }
+        
+        // Show sections with tab management
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(`${sectionName}Section`).style.display = 'block';
+            
+            // Add active class to clicked tab
+            if (event && event.target.classList.contains('tab-btn')) {
+                event.target.classList.add('active');
+            }
+        }
+        
+        // Upload profile picture with enhanced feedback
+        document.getElementById('profilePicUpload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('profilePic', file);
+            
+            try {
+                const response = await fetch('/api/upload-profile-pic', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Profile picture updated successfully! 📸', 'success');
+                    document.getElementById('profilePic').src = result.profilePicture;
+                    document.getElementById('profilePicLarge').src = result.profilePicture;
+                } else {
+                    showMessage(result.message || 'Error uploading file', 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred while uploading', 'error');
+            }
+        });
+        
+        function showMessage(message, type) {
+            const messageEl = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
+            messageEl.textContent = message;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

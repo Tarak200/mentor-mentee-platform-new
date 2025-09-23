@@ -1,0 +1,15 @@
+{
+    "recommendations": [
+        "alexcvzz.vscode-sqlite",
+        "qwtel.sqlite-viewer",
+        "ms-vscode.vscode-json",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-html-languagepack",
+        "ritwickdey.liveserver"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.vscode-typescript-next"
+    ]
+}
