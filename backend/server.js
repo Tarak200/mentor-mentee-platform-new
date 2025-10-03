@@ -70,6 +70,28 @@ app.get('/mentee/login', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'login', 'mentee-login.html'));
 });
 
+// Forgot Password pages
+app.get('/mentor/forgot-password', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentor', 'forgot-password', 'forgot-password.html'));
+});
+
+app.get('/mentee/forgot-password', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'forgot-password', 'forgot-password.html'));
+});
+
+// Reset Password pages
+app.get('/mentor/reset-password', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentor', 'reset-password', 'reset-password.html'));
+});
+
+app.get('/mentee/reset-password', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'reset-password', 'reset-password.html'));
+});
+
 app.get('/mentor-dashboard', (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentor', 'dashboard', 'mentor-dashboard.html'));

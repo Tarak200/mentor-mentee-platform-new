@@ -9,30 +9,46 @@ class EmailService {
 
     // Initialize email transporter
     async initialize() {
-        try {
-            if (this.initialized) return;
+    try {
+        if (this.initialized) return;
 
-            const config = {
-                host: process.env.SMTP_HOST || 'smtp.gmail.com',
-                port: parseInt(process.env.SMTP_PORT) || 587,
-                secure: process.env.SMTP_SECURE === 'true',
-                auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS
-                }
+        const config = {
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.SMTP_PORT, 10) || 587,
+            secure: process.env.SMTP_SECURE === 'true', // true for port 465, false for 587
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        };
+
+        // If no credentials are provided, create an Ethereal test account for local development
+        if (!config.auth.user || !config.auth.pass) {
+            const testAccount = await nodemailer.createTestAccount();
+            config.host = 'smtp.ethereal.email';
+            config.port = 587;
+            config.secure = false;
+            config.auth = {
+                user: testAccount.user,
+                pass: testAccount.pass
             };
-
-            this.transporter = nodemailer.createTransporter(config);
-
-            // Verify connection
-            await this.transporter.verify();
-            this.initialized = true;
-            console.log('Email service initialized successfully');
-        } catch (error) {
-            console.error('Failed to initialize email service:', error);
-            throw error;
+            console.log('No SMTP credentials found — using Ethereal test account (dev only).');
         }
+
+        // === IMPORTANT FIX: use createTransport, not createTransporter ===
+        this.transporter = nodemailer.createTransport(config);
+
+        // verify connection config
+        await this.transporter.verify();
+        this.initialized = true;
+        console.log('Email service initialized successfully');
+
+    } catch (error) {
+        console.error('Failed to initialize email service:', error);
+        throw error;
     }
+}
+
 
     // Load email templates
     loadTemplates() {
@@ -207,6 +223,7 @@ class EmailService {
     }
 
     // Send email
+    // Send email
     async sendEmail(to, templateName, variables = {}) {
         try {
             if (!this.initialized) {
@@ -225,15 +242,23 @@ class EmailService {
                 to: Array.isArray(to) ? to.join(', ') : to,
                 subject,
                 html,
-                // Add text fallback
                 text: html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
             };
 
             const result = await this.transporter.sendMail(mailOptions);
-            console.log(`Email sent successfully to ${to}:`, result.messageId);
+
+            console.log(`✅ Email sent to ${to}: ${result.messageId}`);
+            console.log("SMTP Response:", result.response);
+
+            // Preview URL only for Ethereal accounts
+            const previewUrl = nodemailer.getTestMessageUrl(result);
+            if (previewUrl) {
+                console.log("Preview URL:", previewUrl);
+            }
+
             return result;
         } catch (error) {
-            console.error('Error sending email:', error);
+            console.error("❌ Error sending email:", error);
             throw error;
         }
     }
@@ -336,9 +361,10 @@ class EmailService {
 
     // Send password reset email
     async sendPasswordReset(user, resetToken) {
+        const rolePath = user.role === 'mentor' ? '/mentor/reset-password' : '/mentee/reset-password';
         const variables = {
             firstName: user.firstName,
-            resetUrl: `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`
+            resetUrl: `${process.env.FRONTEND_URL}${rolePath}?token=${resetToken}`
         };
 
         return this.sendEmail(user.email, 'passwordReset', variables);

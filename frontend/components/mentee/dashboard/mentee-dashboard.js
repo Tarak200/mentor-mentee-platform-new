@@ -233,55 +233,172 @@ class MenteeDashboard {
         `).join('');
     }
 
-    renderAvailableMentors() {
+    // Replace renderAvailableMentors
+    // Replace these methods in your MenteeDashboard class:
+
+    // 1. Fix renderAvailableMentors - make it async and await properly
+    async renderAvailableMentors() {
         const container = document.getElementById('available-mentors-grid');
         if (!container) return;
 
-        // Fetch and render available mentors for discovery
-        this.searchMentors();
-    }
-
-    async searchMentors(filters = {}) {
+        // Show loading state
+        container.innerHTML = `<div class="inline-loader">Loading mentors…</div>`;
+        
         try {
-            const queryParams = new URLSearchParams(filters);
-            const response = await fetch(`${this.apiBaseUrl}/mentors/search?${queryParams}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                }
-            });
-
-            if (response.ok) {
-                const mentors = await response.json();
-                this.renderSearchResults(mentors);
-            }
-        } catch (error) {
-            console.error('Error searching mentors:', error);
+            // Actually await the search
+            await this.searchMentors();
+        } catch (err) {
+            console.error('Failed to load available mentors:', err);
+            // Show error state to user
+            container.innerHTML = `
+                <div class="error-state">
+                    <p>Unable to load mentors. Please try again later.</p>
+                    <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
+                        Retry
+                    </button>
+                </div>
+            `;
         }
     }
 
+    // 2. Fix searchMentors with better error handling
+    async searchMentors(filters = {}) {
+        const container = document.getElementById('available-mentors-grid');
+        if (!container) return;
+
+        // Build query params only for defined/non-empty values
+        const params = new URLSearchParams();
+        if (filters.query) params.append('query', filters.query);
+        if (filters.minRating) params.append('minRating', filters.minRating);
+        if (filters.maxRate) params.append('maxRate', filters.maxRate);
+        if (filters.skills) params.append('skills', filters.skills);
+
+        const url = `${this.apiBaseUrl}/mentors/search${params.toString() ? '?' + params.toString() : ''}`;
+
+        // AbortController for timeout
+        const controller = new AbortController();
+        const timeoutMs = 15000; // 15s
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'Accept': 'application/json'
+                },
+                signal: controller.signal
+            });
+
+            clearTimeout(timeout);
+
+            if (!response.ok) {
+                // Log error details
+                let errorText = 'Unknown error';
+                try {
+                    errorText = await response.text();
+                } catch (e) {
+                    errorText = `HTTP ${response.status}`;
+                }
+                
+                console.warn('Mentors search returned non-ok:', response.status, errorText);
+                
+                container.innerHTML = `
+                    <div class="error-state">
+                        <p>Unable to load mentors (Error ${response.status})</p>
+                        <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const mentors = await response.json();
+            
+            if (!Array.isArray(mentors)) {
+                console.error('Expected mentors array, got:', mentors);
+                container.innerHTML = `
+                    <div class="error-state">
+                        <p>Unexpected response from server.</p>
+                        <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Successfully got mentors - render them
+            this.renderSearchResults(mentors);
+            
+        } catch (err) {
+            clearTimeout(timeout);
+            
+            if (err.name === 'AbortError') {
+                console.error('Mentor search aborted due to timeout');
+                container.innerHTML = `
+                    <div class="error-state">
+                        <p>Request timed out. Please try again.</p>
+                        <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            } else {
+                console.error('Error searching mentors:', err);
+                container.innerHTML = `
+                    <div class="error-state">
+                        <p>Failed to load mentors. Please check your connection.</p>
+                        <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // 3. Keep renderSearchResults as is, but add extra safety
     renderSearchResults(mentors) {
         const container = document.getElementById('available-mentors-grid');
         if (!container) return;
 
-        if (mentors.length === 0) {
-            container.innerHTML = '<p class="no-results">No mentors found matching your criteria</p>';
+        if (!mentors || mentors.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>No mentors found matching your criteria</p>
+                    <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
+                        Show All Mentors
+                    </button>
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = mentors.map(mentor => `
-            <div class="mentor-search-card">
-                <img src="${mentor.profilePicture || '/assets/default-avatar.png'}" alt="${mentor.name}">
-                <h4>${mentor.name}</h4>
-                <p>${mentor.expertise}</p>
-                <div class="mentor-tags">
-                    ${mentor.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
-                </div>
-                <div class="mentor-rate">$${mentor.hourlyRate}/hr</div>
-                <button class="btn btn-primary" onclick="menteeDashboard.requestMentor('${mentor.id}')">Connect</button>
-            </div>
-        `).join('');
-    }
+        // Defensive rendering: guard against missing fields
+        container.innerHTML = mentors.map(mentor => {
+            const skills = Array.isArray(mentor.skills) ? mentor.skills : [];
+            const profilePicture = mentor.profilePicture || '/assets/default-avatar.png';
+            const name = mentor.name || (mentor.firstName ? `${mentor.firstName} ${mentor.lastName || ''}`.trim() : 'Unknown Mentor');
+            const expertise = mentor.expertise || 'General Mentoring';
+            const hourlyRate = mentor.hourlyRate != null ? `$${mentor.hourlyRate}/hr` : 'Rate not set';
 
+            return `
+                <div class="mentor-search-card" data-mentor-id="${mentor.id || ''}">
+                    <img src="${profilePicture}" alt="${name}" onerror="this.src='/assets/default-avatar.png'">
+                    <h4>${name}</h4>
+                    <p>${expertise}</p>
+                    <div class="mentor-tags">
+                        ${skills.slice(0, 3).map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                        ${skills.length > 3 ? `<span class="skill-tag">+${skills.length - 3}</span>` : ''}
+                    </div>
+                    <div class="mentor-rate">${hourlyRate}</div>
+                    <button class="btn btn-primary" onclick="menteeDashboard.requestMentor('${mentor.id}')">Connect</button>
+                </div>
+            `;
+        }).join('');
+    }
     // Sessions Management
     async loadSessions() {
         try {

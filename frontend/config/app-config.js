@@ -101,6 +101,60 @@ class AppConfig {
             userType: 'mentee'
         });
 
+        // Forgot Password components
+        this.components.set('mentor-forgot-password', {
+            path: '/components/mentor/forgot-password',
+            files: {
+                html: 'forgot-password.html',
+                css: 'forgot-password.css',
+                js: 'forgot-password.js',
+                security: 'forgot-password-security.js'
+            },
+            dependencies: ['shared'],
+            title: 'Mentor - Forgot Password',
+            userType: 'mentor'
+        });
+
+        this.components.set('mentee-forgot-password', {
+            path: '/components/mentee/forgot-password',
+            files: {
+                html: 'forgot-password.html',
+                css: 'forgot-password.css',
+                js: 'forgot-password.js',
+                security: 'forgot-password-security.js'
+            },
+            dependencies: ['shared'],
+            title: 'Mentee - Forgot Password',
+            userType: 'mentee'
+        });
+
+        // Reset Password components
+        this.components.set('mentor-reset-password', {
+            path: '/components/mentor/reset-password',
+            files: {
+                html: 'reset-password.html',
+                css: 'reset-password.css',
+                js: 'reset-password.js',
+                security: 'reset-password-security.js'
+            },
+            dependencies: ['shared'],
+            title: 'Mentor - Reset Password',
+            userType: 'mentor'
+        });
+
+        this.components.set('mentee-reset-password', {
+            path: '/components/mentee/reset-password',
+            files: {
+                html: 'reset-password.html',
+                css: 'reset-password.css',
+                js: 'reset-password.js',
+                security: 'reset-password-security.js'
+            },
+            dependencies: ['shared'],
+            title: 'Mentee - Reset Password',
+            userType: 'mentee'
+        });
+
         // Shared components
         this.components.set('shared', {
             path: '/components/shared',
@@ -122,6 +176,14 @@ class AppConfig {
         this.routes.set('/register', 'register');
         this.routes.set('/mentor-dashboard', 'mentor-dashboard');
         this.routes.set('/mentee-dashboard', 'mentee-dashboard');
+        this.routes.set('/mentor/login', 'login');
+        this.routes.set('/mentee/login', 'login');
+
+        // Forgot password routes
+        this.routes.set('/mentor/forgot-password', 'mentor-forgot-password');
+        this.routes.set('/mentee/forgot-password', 'mentee-forgot-password');
+        this.routes.set('/mentor/reset-password', 'mentor-reset-password');
+        this.routes.set('/mentee/reset-password', 'mentee-reset-password');
     }
 
     // Get API base URL based on environment
@@ -155,13 +217,16 @@ class AppConfig {
 
         // Check authentication if required
         if (component.requiresAuth && !this.isAuthenticated()) {
-            this.redirect('/login');
+            if (this.getCurrentRoute() !== '/login') {
+                this.redirect('/login');
+            }
             return;
         }
 
+
         // Check user type if required
         if (component.userType && !this.hasCorrectUserType(component.userType)) {
-            this.redirect('/');
+            this.redirect('/home');
             return;
         }
 
@@ -190,23 +255,22 @@ class AppConfig {
 
         const promises = [];
 
-        // Load CSS
-        if (component.files.css) {
-            promises.push(this.loadCSS(`${component.path}/${component.files.css}`));
+        try {
+            if (component.files.css) {
+                promises.push(this.loadCSS(`${component.path}/${component.files.css}`).catch(console.error));
+            }
+            if (component.files.js) {
+                promises.push(this.loadJS(`${component.path}/${component.files.js}`).catch(console.error));
+            }
+            if (component.files.security) {
+                promises.push(this.loadJS(`${component.path}/${component.files.security}`).catch(console.error));
+            }
+            await Promise.all(promises);
+        } catch (err) {
+            console.error('Error loading component files:', err);
         }
-
-        // Load JavaScript
-        if (component.files.js) {
-            promises.push(this.loadJS(`${component.path}/${component.files.js}`));
-        }
-
-        // Load security script
-        if (component.files.security) {
-            promises.push(this.loadJS(`${component.path}/${component.files.security}`));
-        }
-
-        await Promise.all(promises);
     }
+
 
     // Load CSS file
     loadCSS(href) {
@@ -348,6 +412,16 @@ class AppConfig {
         window.addEventListener('offline', () => {
             this.dispatchCustomEvent('app:offline');
         });
+
+        window.addEventListener('popstate', async () => {
+            try {
+                const componentName = window.appConfig.getComponentForRoute();
+                await window.appConfig.loadComponent(componentName);
+            } catch (error) {
+                window.appConfig.handleError(error, 'History Navigation');
+            }
+        });
+
 
         // Handle visibility changes
         document.addEventListener('visibilitychange', () => {

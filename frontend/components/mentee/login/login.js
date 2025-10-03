@@ -1,6 +1,6 @@
 /**
- * Mentee Login Functionality
- * Handles authentication, form validation, and navigation
+ * Mentee Login Functionality - FIXED VERSION
+ * Handles authentication, form validation, and navigation with proper token validation
  */
 
 class MenteeLogin {
@@ -34,17 +34,42 @@ class MenteeLogin {
         this.setupFieldValidation();
     }
 
-    // Check if user already logged in
-    checkExistingSession() {
+    // FIXED: Check if user already logged in with token validation
+    async checkExistingSession() {
         const token = localStorage.getItem('authToken');
         const userType = localStorage.getItem('userType');
         
         if (token && userType === 'mentee') {
-            window.location.href = '/mentee-dashboard';
+            // FIXED: Validate token before redirecting
+            try {
+                const response = await fetch(`${this.apiBaseUrl}/auth/validate-token`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.valid && data.userType === 'mentee') {
+                        window.location.href = '/mentee-dashboard';
+                    } else {
+                        // Invalid token, clear storage
+                        this.clearAuthData();
+                    }
+                } else {
+                    // Token validation failed, clear storage
+                    this.clearAuthData();
+                }
+            } catch (error) {
+                console.error('Token validation error:', error);
+                this.clearAuthData();
+            }
         }
     }
 
-    // Handle login form submission
+    // FIXED: Handle login form submission with proper error handling
     async handleLogin(event) {
         event.preventDefault();
         
@@ -82,12 +107,22 @@ class MenteeLogin {
 
             const data = await response.json();
 
-            if (response.ok) {
+            // FIXED: Better response handling with specific error messages
+            if (response.ok && data.success) {
+                // Verify we got all required data from backend
+                if (!data.token || !data.userId) {
+                    this.showError('Invalid response from server. Please try again.');
+                    return;
+                }
+
                 // Store authentication data
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('userType', 'mentee');
                 localStorage.setItem('userId', data.userId);
-                localStorage.setItem('userName', data.name);
+                localStorage.setItem('userName', data.name || 'User');
+                
+                // FIXED: Store token timestamp for expiration checking
+                localStorage.setItem('tokenTimestamp', Date.now().toString());
 
                 if (remember) {
                     localStorage.setItem('rememberEmail', email);
@@ -102,11 +137,25 @@ class MenteeLogin {
                     window.location.href = '/mentee-dashboard';
                 }, 1500);
             } else {
-                this.showError(data.message || 'Invalid email or password');
+                // FIXED: Handle specific error cases
+                if (response.status === 401) {
+                    this.showError('Invalid email or password. Please check your credentials.');
+                } else if (response.status === 404) {
+                    this.showError('Account not found. Please register first.');
+                } else if (response.status === 403) {
+                    this.showError('Account is not activated or has been suspended.');
+                } else {
+                    this.showError(data.message || 'Login failed. Please try again.');
+                }
             }
         } catch (error) {
             console.error('Login error:', error);
-            this.showError('An error occurred. Please try again.');
+            // FIXED: More specific error message
+            if (error.message.includes('fetch')) {
+                this.showError('Cannot connect to server. Please check your internet connection.');
+            } else {
+                this.showError('An unexpected error occurred. Please try again later.');
+            }
         } finally {
             this.setLoadingState(false);
         }
@@ -149,21 +198,29 @@ class MenteeLogin {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (response.ok && data.success) {
                 this.showSuccess('Registration successful! Please login.');
                 
                 // Switch to login form
                 setTimeout(() => {
                     this.showLoginForm();
                     // Pre-fill email
-                    document.getElementById('loginEmail').value = registrationData.email;
+                    const loginEmail = document.getElementById('loginEmail');
+                    if (loginEmail) {
+                        loginEmail.value = registrationData.email;
+                    }
                 }, 2000);
             } else {
-                this.showError(data.message || 'Registration failed. Please try again.');
+                // FIXED: Handle specific registration errors
+                if (response.status === 409) {
+                    this.showError('An account with this email already exists.');
+                } else {
+                    this.showError(data.message || 'Registration failed. Please try again.');
+                }
             }
         } catch (error) {
             console.error('Registration error:', error);
-            this.showError('An error occurred during registration.');
+            this.showError('An error occurred during registration. Please try again.');
         } finally {
             this.setLoadingState(false);
         }
@@ -318,6 +375,26 @@ class MenteeLogin {
         }
     }
 
+    // ADDED: Clear authentication data
+    clearAuthData() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userType');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('tokenTimestamp');
+    }
+
+    // ADDED: Check if token is expired (optional, depends on your backend)
+    isTokenExpired() {
+        const timestamp = localStorage.getItem('tokenTimestamp');
+        if (!timestamp) return true;
+        
+        const tokenAge = Date.now() - parseInt(timestamp);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        return tokenAge > maxAge;
+    }
+
     // UI Helper functions
     showError(message) {
         this.showNotification(message, 'error');
@@ -404,13 +481,17 @@ class MenteeLogin {
 
     // Form switching
     showLoginForm() {
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('loginForm').style.display = 'block';
+        const registerForm = document.getElementById('registerForm');
+        const loginForm = document.getElementById('loginForm');
+        if (registerForm) registerForm.style.display = 'none';
+        if (loginForm) loginForm.style.display = 'block';
     }
 
     showRegisterForm() {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('registerForm').style.display = 'block';
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        if (loginForm) loginForm.style.display = 'none';
+        if (registerForm) registerForm.style.display = 'block';
     }
 }
 
@@ -434,6 +515,7 @@ function handleGoogleLogin(response) {
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('userType', 'mentee');
                 localStorage.setItem('userId', data.userId);
+                localStorage.setItem('tokenTimestamp', Date.now().toString());
                 window.location.href = '/mentee-dashboard';
             }
         })
@@ -477,13 +559,17 @@ window.togglePassword = function(inputId) {
 };
 
 window.showRegisterForm = function() {
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('registerForm').style.display = 'block';
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    if (loginForm) loginForm.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'block';
 };
 
 window.showLoginForm = function() {
-    document.getElementById('registerForm').style.display = 'none';
-    document.getElementById('loginForm').style.display = 'block';
+    const registerForm = document.getElementById('registerForm');
+    const loginForm = document.getElementById('loginForm');
+    if (registerForm) registerForm.style.display = 'none';
+    if (loginForm) loginForm.style.display = 'block';
 };
 
 // Initialize when DOM is loaded
@@ -494,9 +580,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const rememberedEmail = localStorage.getItem('rememberEmail');
     if (rememberedEmail) {
         const emailInput = document.getElementById('loginEmail');
+        const rememberCheckbox = document.querySelector('input[name="remember"]');
         if (emailInput) {
             emailInput.value = rememberedEmail;
-            document.querySelector('input[name="remember"]').checked = true;
+            if (rememberCheckbox) {
+                rememberCheckbox.checked = true;
+            }
         }
     }
 });

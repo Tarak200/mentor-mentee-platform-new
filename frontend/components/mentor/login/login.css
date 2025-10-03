@@ -79,6 +79,13 @@
     display: flex;
     align-items: flex-start;
     gap: 20px;
+    color: white;
+}
+
+.feature p{
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.9); /* slightly less bright white for body text */
 }
 
 .feature-icon {
@@ -169,6 +176,7 @@
     font-size: 1rem;
     transition: all 0.3s ease;
     background: #FFFFFF;
+    color: black;
 }
 
 .form-group input:focus,
@@ -177,6 +185,7 @@
     outline: none;
     border-color: #2563EB;
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    color: black;
 }
 
 .form-group input::placeholder {
@@ -195,7 +204,7 @@
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #6B7280;
+    color: black;
     cursor: pointer;
     padding: 8px;
     transition: color 0.3s ease;
