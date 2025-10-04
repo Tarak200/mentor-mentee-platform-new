@@ -258,6 +258,7 @@ body.mentor-body {
 .section-header {
     margin-bottom: 2rem;
     text-align: center;
+    color:black;
 }
 
 .section-header h2 {
@@ -352,6 +353,15 @@ body.mentor-body {
     font-weight: 600;
     display: inline-block;
 }
+
+.summary-card p {
+  font-size: 14px;       /* smaller than h3 */
+  color: white;           /* muted grey text */
+  margin: 4px 0 0;       /* spacing above, no bottom margin */
+  font-weight: 500;      /* medium emphasis */
+  letter-spacing: 0.5px; /* subtle spacing */
+}
+
 
 .mentee-message {
     background: #f8fafc;

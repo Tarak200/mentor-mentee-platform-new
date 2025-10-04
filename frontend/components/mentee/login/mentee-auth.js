@@ -176,18 +176,32 @@ async function handleRegistration(e) {
     submitBtn.disabled = true;
     
     try {
-        // Simulate API call
-        await simulateRegistration(registrationData);
+        // Call backend registration
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                firstName: registrationData.firstName,
+                lastName: registrationData.lastName,
+                email: registrationData.email,
+                password: registrationData.password,
+                role: 'mentee'
+            })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Registration failed');
+        }
         
-        // Show success message with payment info
-        showPaymentInfoNotification();
+        // Show success message
+        showNotification('Account created successfully! Please sign in.', 'success', 5000);
         
         // Switch to login form
         setTimeout(() => {
             showLoginForm();
             // Pre-fill email
             document.getElementById('loginEmail').value = registrationData.email;
-        }, 3000);
+        }, 1500);
         
     } catch (error) {
         showNotification(error.message, 'error');

@@ -430,6 +430,8 @@
 
     <!-- Security Script -->
     <script src="/components/mentor/dashboard/mentor-dashboard-security.js"></script>
+    <!-- Socket.IO client -->
+    <script src="/socket.io/socket.io.js"></script>
     
     <script>
         let currentRequestId = null;
@@ -447,6 +449,7 @@
             await loadSessions();
             await loadEarnings();
             await loadPlatformConfig();
+            setupRealtime();
         });
         
         // Load platform configuration
@@ -927,6 +930,176 @@
             }
         });
         
+        // Realtime setup and popup handler
+        function setupRealtime() {
+            try {
+                const socket = io({ auth: { token } });
+                socket.on('connect', () => {});
+                socket.on('request:new', (payload) => {
+                    showIncomingRequestModal(payload);
+                , body: JSON.stringify(body) });
+                socket.on('meeting:start', (payload) => {
+                    showMeetingMiniWindow(payload);
+                });
+                socket.on('meeting:message', (msg) => {
+                    appendMeetingMessage(msg, 'incoming');
+                });
+            } catch (e) {
+                console.warn('Realtime not available:', e.message);
+            }
+        }
+
+        function showIncomingRequestModal(payload) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-user-plus"></i> New Connection Request</h3>
+                        <button class="close-btn">&times;</button>
+                    </div>
+                    <div class="mentee-preview">
+                        <div class="mentee-preview-card">
+                            <img src="${payload.mentee?.avatar || '/uploads/default-avatar.png'}" alt="${payload.mentee?.firstName || ''}">
+                            <div>
+                                <h4>${(payload.mentee?.firstName || '') + ' ' + (payload.mentee?.lastName || '')}</h4>
+                                ${payload.subject ? `<p><strong>Subject:</strong> ${payload.subject}</p>` : ''}
+                                ${payload.message ? `<p><strong>Message:</strong> ${payload.message}</p>` : ''}
+                                ${payload.preferredTime ? `<p><strong>Preferred Time:</strong> ${payload.preferredTime}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-clock"></i> Meeting Date & Time</label>
+                        <input type="datetime-local" class="meeting-time-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-video"></i> Meeting Link (optional)</label>
+                        <input type="url" class="meeting-link-input" placeholder="https://meet.google.com/...">
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-accept"><i class="fas fa-check"></i> Accept</button>
+                        <button class="btn btn-reject"><i class="fas fa-times"></i> Deny</button>
+                    </div>
+                </div>`;
+
+            function close() { document.body.removeChild(modal); }
+
+            modal.querySelector('.modal-overlay').addEventListener('click', close);
+            modal.querySelector('.close-btn').addEventListener('click', close);
+            modal.querySelector('.btn-accept').addEventListener('click', async () => {
+                try {
+                    const meetingTimeInput = modal.querySelector('.meeting-time-input');
+                    const meetingLinkInput = modal.querySelector('.meeting-link-input');
+                    const meetingTime = meetingTimeInput && meetingTimeInput.value ? meetingTimeInput.value : null;
+                    const body = meetingTime ? { meetingTime, meetingLink: meetingLinkInput && meetingLinkInput.value ? meetingLinkInput.value : undefined } : {};
+                    const resp = await fetch(`/api/mentor/requests/${payload.requestId}/accept`, {
+                        method: 'POST',
+headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                    });
+                    if (resp.ok) {
+                        showMessage('Accepted connection request', 'success');
+                        close();
+                        await loadRequests();
+                        await loadSessions();
+                    } else {
+                        const r = await resp.json().catch(() => ({}));
+                        showMessage(r.error || 'Failed to accept', 'error');
+                    }
+                } catch (e) {
+                    showMessage('Network error', 'error');
+                }
+            });
+            modal.querySelector('.btn-reject').addEventListener('click', async () => {
+                try {
+                    const resp = await fetch(`/api/mentor/requests/${payload.requestId}/decline`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: 'Not available' })
+                    });
+                    if (resp.ok) {
+                        showMessage('Declined connection request', 'success');
+                        close();
+                        await loadRequests();
+                    } else {
+                        const r = await resp.json().catch(() => ({}));
+                        showMessage(r.error || 'Failed to decline', 'error');
+                    }
+                } catch (e) {
+                    showMessage('Network error', 'error');
+                }
+            });
+
+            document.body.appendChild(modal);
+        }
+
+        // Mini meeting window + chat
+        let meetingWindow = null;
+        let meetingPeerId = null;
+        let meetingSocket = null;
+
+        function showMeetingMiniWindow(payload) {
+            meetingPeerId = (localStorage.getItem('userId') == payload.mentorId) ? payload.menteeId : payload.mentorId;
+            meetingSocket = io({ auth: { token } });
+
+            if (meetingWindow) {
+                document.body.removeChild(meetingWindow);
+            }
+            meetingWindow = document.createElement('div');
+            meetingWindow.style.cssText = 'position:fixed; bottom:20px; right:20px; width:360px; background:#fff; box-shadow:0 8px 25px rgba(0,0,0,0.15); border-radius:10px; z-index:2000; display:flex; flex-direction:column;';
+            meetingWindow.innerHTML = `
+                <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong>Meeting Started</strong><div style="font-size:12px;color:#666;">${new Date(payload.scheduledAt).toLocaleString()}</div></div>
+                    <button class="close-mini" style="border:none;background:transparent;font-size:18px;cursor:pointer">&times;</button>
+                </div>
+                <div style="padding:10px;">
+                    <div style="margin-bottom:8px; font-size:14px;">Meet link:</div>
+                    <div style="display:flex; gap:6px; align-items:center; margin-bottom:10px;">
+                        <a href="${payload.meetLink}" target="_blank" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${payload.meetLink}</a>
+                        <button class="send-link" style="padding:6px 8px;">Send</button>
+                    </div>
+                    <div class="chat" style="height:140px; overflow:auto; border:1px solid #eee; border-radius:6px; padding:6px; margin-bottom:8px;"></div>
+                    <div style="display:flex; gap:6px;">
+                        <input type="text" class="chat-input" placeholder="Type a message" style="flex:1; padding:6px; border:1px solid #ddd; border-radius:6px;">
+                        <button class="chat-send" style="padding:6px 10px;">Send</button>
+                    </div>
+                </div>`;
+
+            meetingWindow.querySelector('.close-mini').addEventListener('click', () => {
+                document.body.removeChild(meetingWindow); meetingWindow = null;
+            });
+            meetingWindow.querySelector('.send-link').addEventListener('click', () => {
+                if (!meetingSocket) return;
+                meetingSocket.emit('meeting:message', { toUserId: meetingPeerId, text: 'Join via this link', link: payload.meetLink });
+                appendMeetingMessage({ text: 'Link sent', link: payload.meetLink, fromUserId: localStorage.getItem('userId') }, 'outgoing');
+            });
+            meetingWindow.querySelector('.chat-send').addEventListener('click', () => {
+                const input = meetingWindow.querySelector('.chat-input');
+                const text = input.value.trim();
+                if (!text) return;
+                input.value='';
+                if (!meetingSocket) return;
+                meetingSocket.emit('meeting:message', { toUserId: meetingPeerId, text });
+                appendMeetingMessage({ text, fromUserId: localStorage.getItem('userId') }, 'outgoing');
+            });
+
+            document.body.appendChild(meetingWindow);
+        }
+
+        function appendMeetingMessage(msg, direction) {
+            if (!meetingWindow) return;
+            const chat = meetingWindow.querySelector('.chat');
+            const div = document.createElement('div');
+            div.style.margin = '6px 0';
+            if (direction === 'outgoing') {
+                div.style.textAlign = 'right';
+            }
+            div.innerHTML = `${msg.text ? msg.text : ''} ${msg.link ? `<a href=\"${msg.link}\" target=\"_blank\">${msg.link}</a>` : ''}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
         function showMessage(message, type) {
             const messageEl = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
             messageEl.textContent = message;

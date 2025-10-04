@@ -248,11 +248,23 @@ router.get('/requests/pending', authMiddleware.authenticateToken, requireMentor,
     }
 });
 
+// Helper to create a pseudo Google Meet link
+function generateMeetLink() {
+    const alph = 'abcdefghijklmnopqrstuvwxyz';
+    function part(n){ return Array.from({length:n},()=>alph[Math.floor(Math.random()*alph.length)]).join(''); }
+    return `https://meet.google.com/${part(3)}-${part(4)}-${part(3)}`;
+}
+
 // Accept mentoring request
 router.post('/requests/:requestId/accept', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
         const mentorId = req.user.id;
         const { requestId } = req.params;
+        const { meetingTime, meetingLink } = req.body || {};
+
+        // Lookup menteeId for realtime notification
+        const db = require('../services/database');
+        const reqRow = await db.get('SELECT menteeId, mentorId FROM mentoring_requests WHERE id = ?', [requestId]);
 
         const result = await mentorService.acceptRequest(mentorId, requestId);
         
@@ -260,7 +272,45 @@ router.post('/requests/:requestId/accept', authMiddleware.authenticateToken, req
             return res.status(404).json({ error: result.message });
         }
 
-        res.json({ message: 'Request accepted successfully', relationship: result.relationship });
+        // Realtime notify mentee immediately and schedule meeting
+        try {
+            const io = req.app.get('io');
+            if (io && reqRow && reqRow.menteeId) {
+                const { notifyUser } = require('../realtime');
+                notifyUser(io, reqRow.menteeId, 'request:decision', {
+                    requestId,
+                    status: 'accepted',
+                    mentorId,
+                    decidedAt: new Date().toISOString(),
+                });
+
+                // Schedule a meeting start event at provided time or 5 minutes later
+                const when = meetingTime ? new Date(meetingTime) : new Date(Date.now() + 5 * 60 * 1000);
+                const link = meetingLink || generateMeetLink();
+                const menteeId = reqRow.menteeId;
+                const delay = Math.max(0, when.getTime() - Date.now());
+
+                setTimeout(() => {
+                    try {
+                        const payload = {
+                            requestId,
+                            mentorId,
+                            menteeId,
+                            scheduledAt: when.toISOString(),
+                            meetLink: link
+                        };
+                        notifyUser(io, mentorId, 'meeting:start', payload);
+                        notifyUser(io, menteeId, 'meeting:start', payload);
+                    } catch (e) {
+                        console.warn('Failed to emit meeting:start:', e.message);
+                    }
+                }, delay);
+            }
+        } catch (e) {
+            console.warn('Realtime emit failed on accept:', e.message);
+        }
+
+        res.json({ message: 'Request accepted successfully', relationship: result.relationship, meetingScheduledAt: meetingTime || null });
     } catch (error) {
         console.error('Error accepting request:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -274,10 +324,32 @@ router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, re
         const { requestId } = req.params;
         const { reason } = req.body;
 
-        const result = await mentorService.declineRequest(mentorId, requestId, reason);
-        
-        if (!result.success) {
-            return res.status(404).json({ error: result.message });
+        const db = require('../services/database');
+        const reqRow = await db.get('SELECT menteeId, mentorId, status FROM mentoring_requests WHERE id = ? AND mentorId = ?', [requestId, mentorId]);
+        if (!reqRow) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        if (reqRow.status !== 'pending') {
+            return res.status(400).json({ error: 'Only pending requests can be declined' });
+        }
+
+        await db.run('UPDATE mentoring_requests SET status = "declined", updatedAt = ? WHERE id = ?', [new Date().toISOString(), requestId]);
+
+        // Realtime notify mentee immediately
+        try {
+            const io = req.app.get('io');
+            if (io && reqRow.menteeId) {
+                const { notifyUser } = require('../realtime');
+                notifyUser(io, reqRow.menteeId, 'request:decision', {
+                    requestId,
+                    status: 'declined',
+                    mentorId,
+                    reason: reason || null,
+                    decidedAt: new Date().toISOString(),
+                });
+            }
+        } catch (e) {
+            console.warn('Realtime emit failed on decline:', e.message);
         }
 
         res.json({ message: 'Request declined successfully' });

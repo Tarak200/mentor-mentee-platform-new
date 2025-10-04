@@ -1,8 +1,10 @@
 const express = require('express');
 const path = require('path');
+const http = require('http');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
 let port = Number(process.env.PORT) || 3000;
 
 // Import middleware
@@ -25,6 +27,17 @@ const securityRoutes = require('./routes/security');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(corsMiddleware);
+
+// Setup Socket.IO and realtime
+const { Server } = require('socket.io');
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+    }
+});
+const { setupRealtime } = require('./realtime');
+setupRealtime(io);
+app.set('io', io);
 
 // Configure static file serving with proper MIME types
 app.use(express.static(path.join(__dirname, '..', 'frontend'), {
@@ -134,7 +147,7 @@ app.use((req, res) => {
 function startServer(desiredPort, maxAttempts = 10) {
     let attempts = 0;
     function tryListen(p) {
-        const server = app.listen(p, () => {
+        server.listen(p, () => {
             console.log(`Server running on port ${p}`);
             console.log(`Access the application at http://localhost:${p}`);
         });

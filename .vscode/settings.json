@@ -12,7 +12,7 @@
     "sqlite.defaultDatabase": "backend/data/mentorship.db",
     "explorer.fileNesting.enabled": true,
     "explorer.fileNesting.patterns": {
-        "*.db": "*.db-*,*.sqlite,*.sqlite3",
+        "*.db": "*.sqlite,*.sqlite3",
         "package.json": "package-lock.json,npm-shrinkwrap.json,yarn.lock"
     },
     "files.exclude": {
