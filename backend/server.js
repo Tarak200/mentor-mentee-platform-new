@@ -115,6 +115,12 @@ app.get('/mentee-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'dashboard', 'mentee-dashboard.html'));
 });
 
+// Test page for debugging connection requests and popup
+app.get('/test-popup', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'test-popup.html'));
+});
+
 // Platform configuration endpoint
 app.get('/api/platform-config', (req, res) => {
     res.json({

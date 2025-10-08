@@ -16,7 +16,7 @@ async function viewUsers() {
 
     // Fetch mentors
     const mentors = await dbService.all(`
-      SELECT id, firstName, lastName, email, password, plainPassword, createdAt
+      SELECT id, firstName, lastName, email, password as plainPassword, createdAt
       FROM users
       WHERE role = 'mentor'
       ORDER BY createdAt DESC
@@ -24,7 +24,7 @@ async function viewUsers() {
 
     // Fetch mentees
     const mentees = await dbService.all(`
-      SELECT id, firstName, lastName, email, password, plainPassword, createdAt
+      SELECT id, firstName, lastName, email, password as plainPassword, createdAt
       FROM users
       WHERE role = 'mentee'
       ORDER BY createdAt DESC

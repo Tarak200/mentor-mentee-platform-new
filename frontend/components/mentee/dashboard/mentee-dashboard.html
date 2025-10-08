@@ -325,6 +325,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- Success Popup Modal -->
+        <div id="successPopup" class="modal" style="display: none;">
+            <div class="modal-overlay" onclick="closeSuccessPopup()"></div>
+            <div class="modal-content success-popup">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle" style="color: #10B981; font-size: 3rem;"></i>
+                </div>
+                <div class="success-content" style="text-align: center; padding: 20px;">
+                    <h3 style="color: #10B981; margin: 10px 0;">Success!</h3>
+                    <p id="successPopupMessage" style="margin: 15px 0; line-height: 1.5;"></p>
+                    <button onclick="closeSuccessPopup()" class="btn btn-primary" style="margin-top: 20px;">OK</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="errorMessage" class="error-message" style="display: none;"></div>
@@ -643,22 +658,24 @@
                     },
                     body: JSON.stringify({
                         mentorId: currentMentorId,
-                        subject: subject,
+                        goals: subject, // Backend expects 'goals' not 'subject'
                         message: message,
-                        preferredTime: preferredTime
+                        preferredSchedule: preferredTime // Backend expects 'preferredSchedule' not 'preferredTime'
                     })
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showMessage('Connection request sent successfully! 🎉', 'success');
+                    // Show success popup modal
+                    showSuccessPopup('Connection request sent successfully! 🎉\n\nThe mentor will review your request and respond soon.');
                     closeConnectModal();
                 } else {
                     showMessage(result.message || 'Error sending request', 'error');
                 }
             } catch (error) {
-                showMessage('An error occurred', 'error');
+                console.error('Connection request error:', error);
+                showMessage('An error occurred while sending the request', 'error');
             }
         });
 
@@ -899,6 +916,30 @@
             setTimeout(() => {
                 messageEl.style.display = 'none';
             }, 5000);
+        }
+
+        // Show success popup modal
+        function showSuccessPopup(message) {
+            const popup = document.getElementById('successPopup');
+            const messageEl = document.getElementById('successPopupMessage');
+            
+            if (popup && messageEl) {
+                messageEl.innerHTML = message.replace(/\n/g, '<br>');
+                popup.style.display = 'flex';
+                
+                // Auto close after 5 seconds
+                setTimeout(() => {
+                    closeSuccessPopup();
+                }, 5000);
+            }
+        }
+
+        // Close success popup
+        function closeSuccessPopup() {
+            const popup = document.getElementById('successPopup');
+            if (popup) {
+                popup.style.display = 'none';
+            }
         }
     </script>
 </body>

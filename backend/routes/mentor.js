@@ -238,13 +238,13 @@ router.get('/activity', authMiddleware.authenticateToken, requireMentor, async (
 // Get pending requests
 router.get('/requests/pending', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
-        const mentorId = req.user.id;
+        const mentorId = req.user.userId || req.user.id;
         const requests = await mentorService.getPendingRequests(mentorId);
         
-        res.json(requests);
+        res.json({ success: true, data: requests });
     } catch (error) {
         console.error('Error fetching pending requests:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
 
