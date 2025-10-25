@@ -90,17 +90,20 @@
             </div>
 
             <!-- Search and Filter Section -->
+            <!-- Mentor Search Section -->
             <section id="searchSection" class="search-section">
                 <div class="section-header">
                     <h2><i class="fas fa-search"></i> Find Your Perfect Mentor</h2>
                     <p>Discover expert mentors based on your learning needs</p>
                 </div>
-
+                
                 <div class="search-filters">
                     <div class="search-row-1">
                         <div class="search-input-group">
                             <i class="fas fa-book"></i>
-                            <input type="text" id="subjectSearch" placeholder="What subject do you want to learn? (e.g., Programming, Math, Business)">
+                            <input type="text" 
+                                id="subjectSearch" 
+                                placeholder="What subject do you want to learn? (e.g., Programming, Math, Business)">
                         </div>
                         <button onclick="searchMentors()" class="btn btn-search">
                             <i class="fas fa-search"></i> Search Mentors
@@ -113,9 +116,15 @@
                             <div class="filter-group">
                                 <label><i class="fas fa-rupee-sign"></i> Price Range (per hour)</label>
                                 <div class="price-inputs">
-                                    <input type="number" id="minPrice" placeholder="Min ₹" min="0">
+                                    <input type="number" 
+                                        id="minPrice" 
+                                        placeholder="Min ₹" 
+                                        min="0">
                                     <span>to</span>
-                                    <input type="number" id="maxPrice" placeholder="Max ₹" min="0">
+                                    <input type="number" 
+                                        id="maxPrice" 
+                                        placeholder="Max ₹" 
+                                        min="0">
                                 </div>
                             </div>
                             
@@ -131,7 +140,9 @@
                             
                             <div class="filter-group">
                                 <label><i class="fas fa-language"></i> Communication Language</label>
-                                <input type="text" id="languageSearch" placeholder="e.g., English, Hindi">
+                                <input type="text" 
+                                    id="languageSearch" 
+                                    placeholder="e.g., English, Hindi">
                             </div>
                             
                             <div class="filter-group">
@@ -142,8 +153,8 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Mentors Grid -->
+                
+                <!-- Your Existing Mentors Grid -->
                 <div class="mentors-section">
                     <div class="mentors-header">
                         <h3><i class="fas fa-chalkboard-teacher"></i> Available Mentors</h3>
@@ -157,7 +168,6 @@
                     </div>
                 </div>
             </section>
-
             <!-- My Sessions Section -->
             <section id="sessionsSection" class="sessions-section" style="display: none;">
                 <div class="section-header">
@@ -347,6 +357,9 @@
 
     <!-- Security Script -->
     <script src="/components/mentee/dashboard/mentee-dashboard-security.js"></script>
+
+    <!-- functionality Script -->
+    <script src="/components/mentee/dashboard/mentee-dashboard.js"></script>
     <!-- Socket.IO client -->
     <script src="/socket.io/socket.io.js"></script>
     

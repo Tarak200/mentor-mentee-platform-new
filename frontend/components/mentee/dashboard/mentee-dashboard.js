@@ -3,6 +3,66 @@
  * Complete dashboard management for mentees
  */
 
+
+// ========================================
+// GLOBAL SEARCH FUNCTIONS
+// ========================================
+
+/**
+ * Search mentors based on current filter values
+ * This function is called when user clicks "Search Mentors" button
+ */
+function searchMentors() {
+    // Collect all filter values from the form
+    const subjectValue = document.getElementById('subjectSearch')?.value.trim() || '';
+    const minPriceValue = document.getElementById('minPrice')?.value.trim() || '';
+    const maxPriceValue = document.getElementById('maxPrice')?.value.trim() || '';
+    const genderValue = document.getElementById('genderFilter')?.value.trim() || '';
+    const languageValue = document.getElementById('languageSearch')?.value.trim() || '';
+    
+    // Build filters object with only non-empty values
+    const filters = {};
+    
+    if (subjectValue) filters.query = subjectValue;
+    if (minPriceValue) filters.minPrice = minPriceValue;
+    if (maxPriceValue) filters.maxPrice = maxPriceValue;
+    if (genderValue) filters.gender = genderValue;
+    if (languageValue) filters.language = languageValue;
+    
+    console.log('Searching with filters:', filters);
+    
+    // Call the dashboard method with filters
+    if (typeof menteeDashboard !== 'undefined' && menteeDashboard.searchMentors) {
+        menteeDashboard.searchMentors(filters);
+    } else {
+        console.error('menteeDashboard or searchMentors method is not defined');
+        alert('Dashboard is not initialized. Please refresh the page.');
+    }
+}
+
+/**
+ * Clear all filter inputs and show all mentors
+ */
+function clearFilters() {
+    // Clear all input fields
+    const subjectInput = document.getElementById('subjectSearch');
+    const minPriceInput = document.getElementById('minPrice');
+    const maxPriceInput = document.getElementById('maxPrice');
+    const genderSelect = document.getElementById('genderFilter');
+    const languageInput = document.getElementById('languageSearch');
+    
+    if (subjectInput) subjectInput.value = '';
+    if (minPriceInput) minPriceInput.value = '';
+    if (maxPriceInput) maxPriceInput.value = '';
+    if (genderSelect) genderSelect.value = '';
+    if (languageInput) languageInput.value = '';
+    
+    console.log('Filters cleared - showing all mentors');
+    
+    // Trigger search with no filters (show all mentors)
+    searchMentors();
+}
+
 class MenteeDashboard {
     constructor() {
         this.apiBaseUrl = '/api';
@@ -12,6 +72,8 @@ class MenteeDashboard {
         this.notifications = [];
         this.initializeDashboard();
     }
+
+    
 
     async initializeDashboard() {
         await this.checkAuthentication();
@@ -81,6 +143,38 @@ class MenteeDashboard {
 
     // Setup Event Listeners
     setupEventListeners() {
+
+        // ========================================
+        // EVENT LISTENERS
+        // ========================================
+
+        /**
+         * Initialize event listeners when DOM is ready
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing search functionality...');
+            
+            // Add Enter key support for all search inputs
+            const searchInputs = [
+                'subjectSearch',
+                'minPrice',
+                'maxPrice',
+                'languageSearch'
+            ];
+            
+            searchInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            searchMentors();
+                        }
+                    });
+                }
+            });
+        });
+
         // Tab navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -142,7 +236,9 @@ class MenteeDashboard {
                 this.loadMentors(),
                 this.loadSessions(),
                 this.loadNotifications(),
-                this.loadProgress()
+                this.loadProgress(),
+                this.searchMentors(),
+                this.renderAvailableMentors()
             ]);
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -262,18 +358,43 @@ class MenteeDashboard {
     }
 
     // 2. Fix searchMentors with better error handling
+    // ========================================
+    // DASHBOARD CLASS METHODS
+    // Add these methods to your menteeDashboard class
+    // ========================================
+
     async searchMentors(filters = {}) {
-        const container = document.getElementById('available-mentors-grid');
-        if (!container) return;
+        const container = document.getElementById('mentorsGrid');
+        const mentorCount = document.getElementById('mentorCount');
+        
+        if (!container) {
+            console.error('mentorsGrid container not found');
+            return;
+        }
+
+        // Show loading state
+        if (mentorCount) mentorCount.textContent = 'Searching...';
+        container.innerHTML = `
+            <div class="loading-mentors">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Searching for mentors...</p>
+            </div>
+        `;
 
         // Build query params only for defined/non-empty values
         const params = new URLSearchParams();
         if (filters.query) params.append('query', filters.query);
+        if (filters.minPrice) params.append('minPrice', filters.minPrice);
+        if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
+        if (filters.gender) params.append('gender', filters.gender);
+        if (filters.language) params.append('language', filters.language);
+        if (filters.skills) params.append('skills', filters.skills);
         if (filters.minRating) params.append('minRating', filters.minRating);
         if (filters.maxRate) params.append('maxRate', filters.maxRate);
-        if (filters.skills) params.append('skills', filters.skills);
 
         const url = `${this.apiBaseUrl}/mentors/search${params.toString() ? '?' + params.toString() : ''}`;
+
+        console.log('Request URL:', url);
 
         // AbortController for timeout
         const controller = new AbortController();
@@ -303,8 +424,10 @@ class MenteeDashboard {
                 
                 console.warn('Mentors search returned non-ok:', response.status, errorText);
                 
+                if (mentorCount) mentorCount.textContent = '0 mentors';
                 container.innerHTML = `
                     <div class="error-state">
+                        <i class="fas fa-exclamation-circle"></i>
                         <p>Unable to load mentors (Error ${response.status})</p>
                         <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
                             Retry
@@ -318,8 +441,10 @@ class MenteeDashboard {
             
             if (!Array.isArray(mentors)) {
                 console.error('Expected mentors array, got:', mentors);
+                if (mentorCount) mentorCount.textContent = '0 mentors';
                 container.innerHTML = `
                     <div class="error-state">
+                        <i class="fas fa-exclamation-triangle"></i>
                         <p>Unexpected response from server.</p>
                         <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
                             Retry
@@ -327,6 +452,13 @@ class MenteeDashboard {
                     </div>
                 `;
                 return;
+            }
+
+            console.log(`Found ${mentors.length} mentors`);
+            
+            // Update mentor count
+            if (mentorCount) {
+                mentorCount.textContent = `${mentors.length} mentor${mentors.length !== 1 ? 's' : ''}`;
             }
 
             // Successfully got mentors - render them
@@ -337,8 +469,10 @@ class MenteeDashboard {
             
             if (err.name === 'AbortError') {
                 console.error('Mentor search aborted due to timeout');
+                if (mentorCount) mentorCount.textContent = '0 mentors';
                 container.innerHTML = `
                     <div class="error-state">
+                        <i class="fas fa-clock"></i>
                         <p>Request timed out. Please try again.</p>
                         <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
                             Retry
@@ -347,8 +481,10 @@ class MenteeDashboard {
                 `;
             } else {
                 console.error('Error searching mentors:', err);
+                if (mentorCount) mentorCount.textContent = '0 mentors';
                 container.innerHTML = `
                     <div class="error-state">
+                        <i class="fas fa-wifi"></i>
                         <p>Failed to load mentors. Please check your connection.</p>
                         <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
                             Retry
@@ -359,14 +495,22 @@ class MenteeDashboard {
         }
     }
 
-    // 3. Keep renderSearchResults as is, but add extra safety
+    // Keep renderSearchResults as is, but add extra safety
     renderSearchResults(mentors) {
-        const container = document.getElementById('available-mentors-grid');
-        if (!container) return;
+        const container = document.getElementById('mentorsGrid');
+        const mentorCount = document.getElementById('mentorCount');
+        
+        if (!container) {
+            console.error('mentorsGrid container not found');
+            return;
+        }
 
         if (!mentors || mentors.length === 0) {
+            if (mentorCount) mentorCount.textContent = '0 mentors';
             container.innerHTML = `
                 <div class="empty-state">
+                    <i class="fas fa-user-slash"></i>
+                    <h3>No mentors found</h3>
                     <p>No mentors found matching your criteria</p>
                     <button class="btn btn-primary" onclick="menteeDashboard.renderAvailableMentors()">
                         Show All Mentors
@@ -376,13 +520,20 @@ class MenteeDashboard {
             return;
         }
 
+        console.log(`Rendering ${mentors.length} mentor cards`);
+        
+        // Update mentor count
+        if (mentorCount) {
+            mentorCount.textContent = `${mentors.length} mentor${mentors.length !== 1 ? 's' : ''}`;
+        }
+
         // Defensive rendering: guard against missing fields
         container.innerHTML = mentors.map(mentor => {
             const skills = Array.isArray(mentor.skills) ? mentor.skills : [];
             const profilePicture = mentor.profilePicture || '/assets/default-avatar.png';
             const name = mentor.name || (mentor.firstName ? `${mentor.firstName} ${mentor.lastName || ''}`.trim() : 'Unknown Mentor');
             const expertise = mentor.expertise || 'General Mentoring';
-            const hourlyRate = mentor.hourlyRate != null ? `$${mentor.hourlyRate}/hr` : 'Rate not set';
+            const hourlyRate = mentor.hourlyRate != null ? `₹${mentor.hourlyRate}/hr` : 'Rate not set';
 
             return `
                 <div class="mentor-search-card" data-mentor-id="${mentor.id || ''}">
@@ -399,6 +550,8 @@ class MenteeDashboard {
             `;
         }).join('');
     }
+
+
     // Sessions Management
     async loadSessions() {
         try {

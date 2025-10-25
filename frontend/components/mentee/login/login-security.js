@@ -51,10 +51,10 @@ class LoginSecurity {
         }
 
         // Add X-Frame-Options
-        const frameOptions = document.createElement('meta');
-        frameOptions.httpEquiv = 'X-Frame-Options';
-        frameOptions.content = 'DENY';
-        document.head.appendChild(frameOptions);
+        // const frameOptions = document.createElement('meta');
+        // frameOptions.httpEquiv = 'X-Frame-Options';
+        // frameOptions.content = 'DENY';
+        // document.head.appendChild(frameOptions);
     }
 
     // Sanitize all inputs

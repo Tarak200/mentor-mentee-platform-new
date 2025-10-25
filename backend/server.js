@@ -28,6 +28,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(corsMiddleware);
 
+// setting X-Frame-Options header to DENY
+app.use((req, res, next) => {
+    res.setHeader("X-Frame-Options", "DENY");
+    next();
+});
+
+
 // Setup Socket.IO and realtime
 const { Server } = require('socket.io');
 const io = new Server(server, {

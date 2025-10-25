@@ -127,7 +127,6 @@ class AuthController {
         try {
             const { email, password, rememberMe = false } = req.body;
 
-            // Validate input
             if (!email || !password) {
                 return res.status(400).json({
                     success: false,
@@ -135,7 +134,6 @@ class AuthController {
                 });
             }
 
-            // Find user
             const user = await db.get(
                 'SELECT * FROM users WHERE email = ? AND isActive = 1',
                 [email.toLowerCase()]
@@ -144,26 +142,23 @@ class AuthController {
             if (!user) {
                 return res.status(401).json({
                     success: false,
-                    message: 'Invalid credentials'
+                    message: 'Invalid email or password'
                 });
             }
 
-            // Check password
             const isValidPassword = await bcrypt.compare(password, user.password);
             if (!isValidPassword) {
                 return res.status(401).json({
                     success: false,
-                    message: 'Invalid credentials'
+                    message: 'Invalid email or password'
                 });
             }
 
-            // Update last login
             await db.run(
                 'UPDATE users SET lastLogin = ? WHERE id = ?',
                 [new Date().toISOString(), user.id]
             );
 
-            // Generate JWT token
             const tokenExpiry = rememberMe ? '30d' : '7d';
             const token = jwt.sign(
                 { userId: user.id, email: user.email, role: user.role },
@@ -171,10 +166,9 @@ class AuthController {
                 { expiresIn: tokenExpiry }
             );
 
-            // Remove password from response
             const { password: _, ...userResponse } = user;
 
-            res.json({
+            res.status(200).json({
                 success: true,
                 message: 'Login successful',
                 data: {
@@ -190,10 +184,11 @@ class AuthController {
             console.error('Login error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Login failed'
+                message: 'Login failed due to server error'
             });
         }
     }
+
 
     // User logout
     async logout(req, res) {

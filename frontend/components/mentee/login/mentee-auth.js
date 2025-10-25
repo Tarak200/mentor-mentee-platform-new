@@ -1,813 +1,712 @@
-// ===== MENTEE AUTHENTICATION SYSTEM =====
-// Comprehensive authentication handling for mentees
+/**
+ * Mentee Authentication System - Merged and Optimized
+ * Handles authentication, form validation, and navigation with proper token validation
+ */
 
-document.addEventListener('DOMContentLoaded', function() {
-    initializeMenteeAuth();
-});
-
-function initializeMenteeAuth() {
-    console.log('Mentee Authentication System Initialized');
-    
-    // Setup form event listeners
-    setupFormListeners();
-    
-    // Setup form validation
-    setupFormValidation();
-    
-    // Setup Google Sign-In
-    setupGoogleSignIn();
-    
-    // Setup password strength checker
-    setupPasswordStrength();
-    
-    // Setup UPI validation
-    setupUPIValidation();
-}
-
-// ===== FORM MANAGEMENT =====
-function showRegisterForm() {
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    
-    loginForm.style.display = 'none';
-    registerForm.style.display = 'block';
-    
-    // Add animation
-    registerForm.classList.add('fade-in');
-    
-    // Update URL without refresh
-    history.pushState({form: 'register'}, '', '#register');
-}
-
-function showLoginForm() {
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    
-    registerForm.style.display = 'none';
-    loginForm.style.display = 'block';
-    
-    // Add animation
-    loginForm.classList.add('fade-in');
-    
-    // Update URL without refresh
-    history.pushState({form: 'login'}, '', '#login');
-}
-
-// Password toggle function moved to login.js to avoid conflicts
-
-// ===== FORM LISTENERS =====
-function setupFormListeners() {
-    // Login form submission
-    const loginForm = document.getElementById('menteeLoginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+class MenteeLogin {
+    constructor() {
+        this.apiBaseUrl = '/api';
+        this.initializeEventListeners();
+        this.checkExistingSession();
     }
-    
-    // Registration form submission
-    const registerForm = document.getElementById('menteeRegisterForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleRegistration);
+
+    // Initialize event listeners
+    initializeEventListeners() {
+        // Login form submission
+        const loginForm = document.getElementById('menteeLoginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        }
+
+        // Register form submission
+        const registerForm = document.getElementById('menteeRegisterForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', (e) => this.handleRegister(e));
+        }
+
+        // Password visibility toggle - setup initial state
+        document.querySelectorAll('.password-toggle').forEach(btn => {
+            btn.setAttribute('title', 'Show password');
+            btn.addEventListener('click', (e) => this.togglePasswordVisibility(e));
+        });
+
+        // Form field validation
+        this.setupFieldValidation();
+        
+        // Setup password strength checker
+        this.setupPasswordStrength();
+        
+        // Setup UPI validation
+        this.setupUPIValidation();
+        
+        // Setup real-time validation
+        this.setupRealTimeValidation();
+        
+        // Handle browser back/forward
+        window.addEventListener('popstate', function(e) {
+            if (e.state && e.state.form) {
+                if (e.state.form === 'register') {
+                    showRegisterForm();
+                } else {
+                    showLoginForm();
+                }
+            }
+        });
     }
-    
-    // Handle browser back/forward
-    window.addEventListener('popstate', function(e) {
-        if (e.state && e.state.form) {
-            if (e.state.form === 'register') {
-                showRegisterForm();
-            } else {
-                showLoginForm();
+
+    // Check if user already logged in with token validation
+    async checkExistingSession() {
+        const token = localStorage.getItem('authToken');
+        const userType = localStorage.getItem('userType');
+        
+        if (token && userType === 'mentee') {
+            // Validate token before redirecting
+            try {
+                const response = await fetch(`${this.apiBaseUrl}/auth/validate-token`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.valid && data.userType === 'mentee') {
+                        window.location.href = '/mentee-dashboard';
+                    } else {
+                        // Invalid token, clear storage
+                        this.clearAuthData();
+                    }
+                } else {
+                    // Token validation failed, clear storage
+                    this.clearAuthData();
+                }
+            } catch (error) {
+                console.error('Token validation error:', error);
+                this.clearAuthData();
             }
         }
-    });
-    
-    // Real-time form validation
-    setupRealTimeValidation();
+    }
+
+    // Handle login form submission with proper error handling
+    async handleLogin(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const email = form.email.value.trim();
+        const password = form.password.value;
+        const remember = form.remember?.checked || false;
+
+        if (!this.validateEmail(email)) {
+            this.showError('Please enter a valid email address');
+            return;
+        }
+
+        if (!this.validatePassword(password)) {
+            this.showError('Password must be at least 6 characters');
+            return;
+        }
+
+        this.setLoadingState(true);
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+            console.log('Login response:', data);
+
+            if (response.ok && data.success) {
+                // Check if user is actually a mentee
+                if (data.data.user.role !== 'mentee') {
+                    throw new Error('This account is not registered as a mentee. Please use the mentor login.');
+                }
+
+                const token = data.data.token;
+                const userId = data.data.user.id;
+                const userName = data.data.user.name || 'User';
+
+                // Store authentication data
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('userType', 'mentee');
+                localStorage.setItem('userId', userId);
+                localStorage.setItem('userName', userName);
+
+                if (remember) {
+                    localStorage.setItem('rememberEmail', email);
+                } else {
+                    localStorage.removeItem('rememberEmail');
+                }
+
+                this.showSuccess('Login successful! Redirecting...');
+                setTimeout(() => window.location.href = '/mentee-dashboard', 1500);
+
+            } else {
+                throw new Error(data.message || 'Login failed');
+            }
+
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showError(error.message || 'Cannot connect to server. Please try again later.');
+            this.setLoadingState(false);
+        }
+    }
+    // Handle registration form submission
+    async handleRegister(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        // Extract registration data
+        const registrationData = this.extractRegistrationData(formData);
+
+        // Validate registration data
+        const validation = this.validateRegistration(registrationData);
+        if (!validation.isValid) {
+            this.showError(validation.error);
+            return;
+        }
+
+        // Show loading state
+        this.setLoadingState(true);
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...registrationData,
+                    userType: 'mentee'
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.showSuccess('Registration successful! Please login.');
+                
+                // Switch to login form
+                setTimeout(() => {
+                    this.showLoginForm();
+                    // Pre-fill email
+                    const loginEmail = document.getElementById('loginEmail');
+                    if (loginEmail) {
+                        loginEmail.value = registrationData.email;
+                    }
+                }, 2000);
+            } else {
+                // Handle specific registration errors
+                if (response.status === 409) {
+                    this.showError('An account with this email already exists.');
+                } else {
+                    this.showError(data.message || 'Registration failed. Please try again.');
+                }
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            this.showError('An error occurred during registration. Please try again.');
+        } finally {
+            this.setLoadingState(false);
+        }
+    }
+
+    // Extract registration data from form
+    extractRegistrationData(formData) {
+        // Get selected languages
+        const languages = Array.from(document.querySelectorAll('input[name="languages"]:checked'))
+            .map(input => input.value);
+        
+        // Get selected availability
+        const availability = Array.from(document.querySelectorAll('input[name="availability"]:checked'))
+            .map(input => input.value);
+        
+        return {
+            // Personal Information
+            firstName: formData.get('firstName'),
+            lastName: formData.get('lastName'),
+            age: parseInt(formData.get('age')),
+            gender: formData.get('gender'),
+            mobile: formData.get('mobile'),
+            email: formData.get('email'),
+            
+            // Education & Learning Goals
+            education: formData.get('education'),
+            institution: formData.get('institution'),
+            currentPursuing: formData.get('currentPursuing'),
+            learningGoals: formData.get('learningGoals'),
+            
+            // Language & Availability
+            languages: languages,
+            availability: availability,
+            
+            // Payment Information
+            upiId: formData.get('upiId'),
+            
+            // Account Security
+            password: formData.get('password'),
+            confirmPassword: formData.get('confirmPassword'),
+            
+            // Metadata
+            registrationDate: new Date().toISOString(),
+            isVerified: false,
+            profileComplete: true
+        };
+    }
+
+    // Validate registration data
+    validateRegistration(data) {
+        // Required fields
+        const requiredFields = ['firstName', 'lastName', 'email', 'password', 'age', 'gender', 'mobile'];
+        
+        for (let field of requiredFields) {
+            if (!data[field]) {
+                return { isValid: false, error: `${this.formatFieldName(field)} is required` };
+            }
+        }
+
+        // Email validation
+        if (!this.validateEmail(data.email)) {
+            return { isValid: false, error: 'Please enter a valid email address' };
+        }
+
+        // Password validation
+        if (!this.validatePassword(data.password)) {
+            return { isValid: false, error: 'Password must be at least 6 characters' };
+        }
+
+        // Confirm password
+        if (data.password !== data.confirmPassword) {
+            return { isValid: false, error: 'Passwords do not match' };
+        }
+
+        // Age validation
+        const age = parseInt(data.age);
+        if (isNaN(age) || age < 13 || age > 100) {
+            return { isValid: false, error: 'Please enter a valid age (13-100)' };
+        }
+
+        // Mobile validation
+        if (!this.validateMobile(data.mobile)) {
+            return { isValid: false, error: 'Please enter a valid mobile number' };
+        }
+
+        return { isValid: true };
+    }
+
+    // Setup field validation
+    setupFieldValidation() {
+        // Email validation
+        const emailInputs = document.querySelectorAll('input[type="email"]');
+        emailInputs.forEach(input => {
+            input.addEventListener('blur', () => {
+                if (input.value && !this.validateEmail(input.value)) {
+                    this.showFieldError(input, 'Invalid email format');
+                } else {
+                    this.clearFieldError(input);
+                }
+            });
+        });
+
+        // Mobile number formatting
+        const mobileInputs = document.querySelectorAll('input[type="tel"]');
+        mobileInputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                e.target.value = this.formatMobileNumber(e.target.value);
+            });
+        });
+    }
+
+    // Setup real-time validation
+    setupRealTimeValidation() {
+        // Password confirmation
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', () => {
+                this.validatePasswordConfirmation();
+            });
+        }
+        
+        // Age validation
+        const ageInput = document.getElementById('age');
+        if (ageInput) {
+            ageInput.addEventListener('input', () => {
+                this.validateAge(ageInput);
+            });
+        }
+    }
+
+    // Setup password strength checker
+    setupPasswordStrength() {
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', () => {
+                this.updatePasswordStrength(passwordInput);
+            });
+        }
+    }
+
+    // Setup UPI validation
+    setupUPIValidation() {
+        const upiInput = document.getElementById('upiId');
+        if (upiInput) {
+            upiInput.addEventListener('input', () => {
+                this.validateUPI(upiInput);
+            });
+        }
+    }
+
+    // Validation helpers
+    validateEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    validatePassword(password) {
+        return password && password.length >= 6;
+    }
+
+    validateMobile(mobile) {
+        const mobileRegex = /^[0-9]{10}$/;
+        return mobileRegex.test(mobile.replace(/\D/g, ''));
+    }
+
+    validateUPI(field) {
+        const upiId = field.value.trim();
+        const upiRegex = /^[\w\.-]+@[\w\.-]+$/;
+        
+        if (upiId && !upiRegex.test(upiId)) {
+            this.showFieldError(field, 'Please enter a valid UPI ID (e.g., username@bank)');
+            return false;
+        }
+        
+        this.clearFieldError(field);
+        return true;
+    }
+
+    validateAge(field) {
+        const age = parseInt(field.value);
+        
+        if (age < 13) {
+            this.showFieldError(field, 'You must be at least 13 years old to create an account');
+            return false;
+        }
+        
+        if (age > 100) {
+            this.showFieldError(field, 'Please enter a valid age');
+            return false;
+        }
+        
+        this.clearFieldError(field);
+        return true;
+    }
+
+    validatePasswordConfirmation() {
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        
+        if (!password || !confirmPassword) return true;
+        
+        if (password.value !== confirmPassword.value) {
+            this.showFieldError(confirmPassword, 'Passwords do not match');
+            return false;
+        }
+        
+        this.clearFieldError(confirmPassword);
+        return true;
+    }
+
+    formatMobileNumber(value) {
+        const cleaned = value.replace(/\D/g, '');
+        const limited = cleaned.substring(0, 10);
+        
+        if (limited.length >= 6) {
+            return `${limited.substring(0, 3)}-${limited.substring(3, 6)}-${limited.substring(6)}`;
+        } else if (limited.length >= 3) {
+            return `${limited.substring(0, 3)}-${limited.substring(3)}`;
+        }
+        return limited;
+    }
+
+    // Update password strength indicator
+    updatePasswordStrength(input) {
+        const password = input.value;
+        let strength = 0;
+        
+        if (password.length >= 8) strength++;
+        if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+        if (password.match(/[0-9]/)) strength++;
+        if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+        const strengthIndicator = input.parentElement.querySelector('.password-strength');
+        if (!strengthIndicator && password.length > 0) {
+            const indicator = document.createElement('div');
+            indicator.className = 'password-strength';
+            input.parentElement.appendChild(indicator);
+        }
+
+        const indicator = input.parentElement.querySelector('.password-strength');
+        if (indicator) {
+            const strengthLevels = ['Weak', 'Fair', 'Good', 'Strong'];
+            const strengthColors = ['#ff4444', '#ff9944', '#ffdd44', '#44ff44'];
+            
+            indicator.textContent = strengthLevels[strength] || 'Very Weak';
+            indicator.style.color = strengthColors[strength] || '#ff4444';
+        }
+    }
+
+    // Toggle password visibility
+    togglePasswordVisibility(event) {
+        const button = event.currentTarget;
+        const input = button.parentElement.querySelector('input');
+        const icon = button.querySelector('i');
+
+        if (!input || !icon) {
+            console.error('Password toggle elements not found');
+            return;
+        }
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+            button.setAttribute('title', 'Hide password');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+            button.setAttribute('title', 'Show password');
+        }
+    }
+
+    // Clear authentication data
+    clearAuthData() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userType');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('tokenTimestamp');
+    }
+
+    // Check if token is expired
+    isTokenExpired() {
+        const timestamp = localStorage.getItem('tokenTimestamp');
+        if (!timestamp) return true;
+        
+        const tokenAge = Date.now() - parseInt(timestamp);
+        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+        
+        return tokenAge > maxAge;
+    }
+
+    // UI Helper functions
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
+
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+
+    showNotification(message, type) {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(n => n.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
+            <span>${message}</span>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 10);
+
+        // Remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+
+    showFieldError(input, message) {
+        const formGroup = input.closest('.form-group');
+        if (formGroup) {
+            formGroup.classList.add('error');
+            let errorElement = formGroup.querySelector('.field-error');
+            if (!errorElement) {
+                errorElement = document.createElement('span');
+                errorElement.className = 'field-error';
+                formGroup.appendChild(errorElement);
+            }
+            errorElement.textContent = message;
+        }
+    }
+
+    clearFieldError(input) {
+        const formGroup = input.closest('.form-group');
+        if (formGroup) {
+            formGroup.classList.remove('error');
+            const errorElement = formGroup.querySelector('.field-error');
+            if (errorElement) {
+                errorElement.remove();
+            }
+        }
+    }
+
+    setLoadingState(isLoading) {
+        const submitButtons = document.querySelectorAll('button[type="submit"]');
+        submitButtons.forEach(button => {
+            if (isLoading) {
+                button.disabled = true;
+                button.classList.add('loading');
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Please wait...';
+            } else {
+                button.disabled = false;
+                button.classList.remove('loading');
+                // Restore original text
+                if (button.closest('#menteeLoginForm')) {
+                    button.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                } else if (button.closest('#menteeRegisterForm')) {
+                    button.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+                }
+            }
+        });
+    }
+
+    formatFieldName(fieldName) {
+        return fieldName
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase());
+    }
+
+    // Form switching
+    showLoginForm() {
+        const registerForm = document.getElementById('registerForm');
+        const loginForm = document.getElementById('loginForm');
+        if (registerForm) registerForm.style.display = 'none';
+        if (loginForm) loginForm.style.display = 'block';
+        history.pushState({form: 'login'}, '', '#login');
+    }
+
+    showRegisterForm() {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        if (loginForm) loginForm.style.display = 'none';
+        if (registerForm) registerForm.style.display = 'block';
+        history.pushState({form: 'register'}, '', '#register');
+    }
 }
 
-// ===== LOGIN HANDLING =====
-async function handleLogin(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const loginData = {
-        email: formData.get('email'),
-        password: formData.get('password'),
-        remember: formData.get('remember') === 'on'
-    };
-    
-    // Show loading state
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
-    submitBtn.disabled = true;
-    
-    try {
-        // Make real API call to backend
-        const response = await fetch('/api/auth/login', {
+// ===== GOOGLE LOGIN HANDLER =====
+function handleGoogleLogin(response) {
+    // Handle Google OAuth response
+    if (response.credential) {
+        fetch('/api/auth/google', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                email: loginData.email,
-                password: loginData.password
+                credential: response.credential,
+                userType: 'mentee'
             })
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
-            // Check if user is actually a mentee
-            if (result.data.user.role !== 'mentee') {
-                throw new Error('This account is not registered as a mentee. Please use the mentor login.');
-            }
-            
-            // Show success message
-            showNotification('Login successful! Redirecting to dashboard...', 'success');
-            
-            // Store user session
-            storeUserSession({
-                type: 'mentee',
-                email: loginData.email,
-                token: result.data.token,
-                user: result.data.user,
-                loginTime: new Date().toISOString()
-            });
-            
-            // Store token for API requests
-            localStorage.setItem('authToken', result.data.token);
-            localStorage.setItem('userType', 'mentee');
-            localStorage.setItem('userId', result.data.user.id);
-            
-            // Redirect to mentee dashboard
-            setTimeout(() => {
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('userType', 'mentee');
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('tokenTimestamp', Date.now().toString());
                 window.location.href = '/mentee-dashboard';
-            }, 1500);
-        } else {
-            throw new Error(result.message || 'Login failed');
-        }
-        
-    } catch (error) {
-        showNotification(error.message, 'error');
-        
-        // Reset form
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Google login error:', error);
+        });
     }
 }
 
-
-// ===== REGISTRATION HANDLING =====
-async function handleRegistration(e) {
-    e.preventDefault();
-    
-    // Validate form
-    if (!validateRegistrationForm(e.target)) {
+// ===== GLOBAL FUNCTIONS FOR HTML ONCLICK HANDLERS =====
+window.togglePassword = function(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) {
+        console.error('Password input not found:', inputId);
         return;
     }
     
-    const formData = new FormData(e.target);
-    const registrationData = extractRegistrationData(formData);
-    
-    // Show loading state
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
-    submitBtn.disabled = true;
-    
-    try {
-        // Call backend registration
-        const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                firstName: registrationData.firstName,
-                lastName: registrationData.lastName,
-                email: registrationData.email,
-                password: registrationData.password,
-                role: 'mentee'
-            })
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Registration failed');
-        }
-        
-        // Show success message
-        showNotification('Account created successfully! Please sign in.', 'success', 5000);
-        
-        // Switch to login form
-        setTimeout(() => {
-            showLoginForm();
-            // Pre-fill email
-            document.getElementById('loginEmail').value = registrationData.email;
-        }, 1500);
-        
-    } catch (error) {
-        showNotification(error.message, 'error');
-        
-        // Reset form
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+    const button = input.parentElement.querySelector('.password-toggle');
+    if (!button) {
+        console.error('Password toggle button not found for:', inputId);
+        return;
     }
-}
+    
+    const icon = button.querySelector('i');
+    if (!icon) {
+        console.error('Password toggle icon not found for:', inputId);
+        return;
+    }
 
-function extractRegistrationData(formData) {
-    // Get selected languages
-    const languages = Array.from(document.querySelectorAll('input[name="languages"]:checked'))
-        .map(input => input.value);
-    
-    // Get selected availability
-    const availability = Array.from(document.querySelectorAll('input[name="availability"]:checked'))
-        .map(input => input.value);
-    
-    return {
-        // Personal Information
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        age: parseInt(formData.get('age')),
-        gender: formData.get('gender'),
-        mobile: formData.get('mobile'),
-        email: formData.get('email'),
-        
-        // Education & Learning Goals
-        education: formData.get('education'),
-        institution: formData.get('institution'),
-        currentPursuing: formData.get('currentPursuing'),
-        learningGoals: formData.get('learningGoals'),
-        
-        // Language & Availability
-        languages: languages,
-        availability: availability,
-        
-        // Payment Information
-        upiId: formData.get('upiId'),
-        
-        // Account Security
-        password: formData.get('password'),
-        
-        // Metadata
-        registrationDate: new Date().toISOString(),
-        isVerified: false,
-        profileComplete: true
-    };
-}
-
-async function simulateRegistration(registrationData) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            // Check if email already exists
-            const existingMentees = JSON.parse(localStorage.getItem('mentees') || '[]');
-            const emailExists = existingMentees.some(m => m.email === registrationData.email);
-            
-            if (emailExists) {
-                reject(new Error('An account with this email already exists. Please sign in instead.'));
-                return;
-            }
-            
-            // Generate mentee ID
-            registrationData.id = 'mentee_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            
-            // Store mentee data
-            existingMentees.push(registrationData);
-            localStorage.setItem('mentees', JSON.stringify(existingMentees));
-            
-            resolve(registrationData);
-        }, 2000);
-    });
-}
-
-function showPaymentInfoNotification() {
-    showNotification(`
-        🎉 Account created successfully! 
-        
-        📝 IMPORTANT PAYMENT INFO:
-        • Pay to UPI ID: mentorconnect@upi
-        • Include 10% service fee
-        • We'll transfer mentor payments after sessions
-        • Always get payment confirmation
-        
-        Please sign in to continue!
-    `, 'success', 8000);
-}
-
-// ===== FORM VALIDATION =====
-function setupFormValidation() {
-    // Add validation listeners to all required fields
-    const requiredFields = document.querySelectorAll('input[required], select[required]');
-    
-    requiredFields.forEach(field => {
-        field.addEventListener('blur', function() {
-            validateField(this);
-        });
-        
-        field.addEventListener('input', function() {
-            // Clear error state on input
-            clearFieldError(this);
-        });
-    });
-}
-
-function setupRealTimeValidation() {
-    // Email validation
-    const emailInputs = document.querySelectorAll('input[type="email"]');
-    emailInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            validateEmail(this);
-        });
-    });
-    
-    // Phone validation
-    const phoneInput = document.getElementById('mobile');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function() {
-            validatePhone(this);
-        });
-    }
-    
-    // Password confirmation
-    const confirmPasswordInput = document.getElementById('confirmPassword');
-    if (confirmPasswordInput) {
-        confirmPasswordInput.addEventListener('input', function() {
-            validatePasswordConfirmation();
-        });
-    }
-    
-    // Age validation
-    const ageInput = document.getElementById('age');
-    if (ageInput) {
-        ageInput.addEventListener('input', function() {
-            validateAge(this);
-        });
-    }
-}
-
-function validateRegistrationForm(form) {
-    let isValid = true;
-    
-    // Validate all required fields
-    const requiredFields = form.querySelectorAll('input[required], select[required]');
-    requiredFields.forEach(field => {
-        if (!validateField(field)) {
-            isValid = false;
-        }
-    });
-    
-    // Validate password confirmation
-    if (!validatePasswordConfirmation()) {
-        isValid = false;
-    }
-    
-    // Validate languages selection
-    if (!validateLanguages()) {
-        isValid = false;
-    }
-    
-    // Validate availability selection
-    if (!validateAvailability()) {
-        isValid = false;
-    }
-    
-    // Validate terms acceptance
-    if (!validateTerms()) {
-        isValid = false;
-    }
-    
-    return isValid;
-}
-
-function validateField(field) {
-    const value = field.value.trim();
-    
-    // Clear previous errors
-    clearFieldError(field);
-    
-    if (field.hasAttribute('required') && !value) {
-        showFieldError(field, 'This field is required');
-        return false;
-    }
-    
-    // Field-specific validation
-    switch (field.type) {
-        case 'email':
-            return validateEmail(field);
-        case 'tel':
-            return validatePhone(field);
-        case 'number':
-            return validateNumber(field);
-        default:
-            if (field.name === 'upiId') {
-                return validateUPI(field);
-            }
-            return true;
-    }
-}
-
-function validateEmail(field) {
-    const email = field.value.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    if (email && !emailRegex.test(email)) {
-        showFieldError(field, 'Please enter a valid email address');
-        return false;
-    }
-    
-    return true;
-}
-
-function validatePhone(field) {
-    const phone = field.value.trim();
-    const phoneRegex = /^[+]?[\d\s\-\(\)]{10,}$/;
-    
-    if (phone && !phoneRegex.test(phone)) {
-        showFieldError(field, 'Please enter a valid phone number');
-        return false;
-    }
-    
-    return true;
-}
-
-function validateNumber(field) {
-    const value = parseFloat(field.value);
-    const min = parseFloat(field.getAttribute('min'));
-    const max = parseFloat(field.getAttribute('max'));
-    
-    if (isNaN(value)) {
-        showFieldError(field, 'Please enter a valid number');
-        return false;
-    }
-    
-    if (min && value < min) {
-        showFieldError(field, `Value must be at least ${min}`);
-        return false;
-    }
-    
-    if (max && value > max) {
-        showFieldError(field, `Value must be at most ${max}`);
-        return false;
-    }
-    
-    return true;
-}
-
-function validateAge(field) {
-    const age = parseInt(field.value);
-    
-    if (age < 13) {
-        showFieldError(field, 'You must be at least 13 years old to create an account');
-        return false;
-    }
-    
-    if (age > 100) {
-        showFieldError(field, 'Please enter a valid age');
-        return false;
-    }
-    
-    return true;
-}
-
-function validatePasswordConfirmation() {
-    const password = document.getElementById('password');
-    const confirmPassword = document.getElementById('confirmPassword');
-    
-    if (!password || !confirmPassword) return true;
-    
-    if (password.value !== confirmPassword.value) {
-        showFieldError(confirmPassword, 'Passwords do not match');
-        return false;
-    }
-    
-    clearFieldError(confirmPassword);
-    return true;
-}
-
-function validateLanguages() {
-    const languageCheckboxes = document.querySelectorAll('input[name="languages"]:checked');
-    
-    if (languageCheckboxes.length === 0) {
-        showNotification('Please select at least one language you can communicate in', 'error');
-        return false;
-    }
-    
-    return true;
-}
-
-function validateAvailability() {
-    const availabilityCheckboxes = document.querySelectorAll('input[name="availability"]:checked');
-    
-    if (availabilityCheckboxes.length === 0) {
-        showNotification('Please select at least one preferred time slot for learning', 'error');
-        return false;
-    }
-    
-    return true;
-}
-
-function validateTerms() {
-    const termsCheckbox = document.querySelector('input[name="terms"]');
-    
-    if (!termsCheckbox.checked) {
-        showNotification('Please accept the Terms of Service and Privacy Policy to continue', 'error');
-        return false;
-    }
-    
-    return true;
-}
-
-function showFieldError(field, message) {
-    field.classList.add('error');
-    
-    // Remove existing error message
-    const existingError = field.parentElement.querySelector('.field-error');
-    if (existingError) {
-        existingError.remove();
-    }
-    
-    // Add error message
-    const errorElement = document.createElement('small');
-    errorElement.className = 'field-error';
-    errorElement.textContent = message;
-    field.parentElement.appendChild(errorElement);
-}
-
-function clearFieldError(field) {
-    field.classList.remove('error');
-    const errorElement = field.parentElement.querySelector('.field-error');
-    if (errorElement) {
-        errorElement.remove();
-    }
-}
-
-// ===== UPI VALIDATION =====
-function setupUPIValidation() {
-    const upiInput = document.getElementById('upiId');
-    if (upiInput) {
-        upiInput.addEventListener('input', function() {
-            validateUPI(this);
-        });
-    }
-}
-
-function validateUPI(field) {
-    const upiId = field.value.trim();
-    const upiRegex = /^[\w\.-]+@[\w\.-]+$/;
-    
-    if (upiId && !upiRegex.test(upiId)) {
-        showFieldError(field, 'Please enter a valid UPI ID (e.g., username@bank)');
-        return false;
-    }
-    
-    return true;
-}
-
-// ===== PASSWORD STRENGTH =====
-function setupPasswordStrength() {
-    const passwordInput = document.getElementById('password');
-    if (passwordInput) {
-        passwordInput.addEventListener('input', function() {
-            checkPasswordStrength(this);
-        });
-    }
-}
-
-function checkPasswordStrength(input) {
-    const password = input.value;
-    const strength = calculatePasswordStrength(password);
-    
-    // Remove existing strength indicator
-    const existingIndicator = input.parentElement.parentElement.querySelector('.password-strength');
-    if (existingIndicator) {
-        existingIndicator.remove();
-    }
-    
-    // Add strength indicator
-    if (password.length > 0) {
-        const strengthIndicator = document.createElement('div');
-        strengthIndicator.className = `password-strength strength-${strength.level}`;
-        strengthIndicator.innerHTML = `
-            <div class="strength-bar">
-                <div class="strength-fill" style="width: ${strength.percentage}%"></div>
-            </div>
-            <span class="strength-text">${strength.text}</span>
-        `;
-        
-        input.parentElement.parentElement.appendChild(strengthIndicator);
-    }
-}
-
-function calculatePasswordStrength(password) {
-    let score = 0;
-    let level = 'weak';
-    let text = 'Weak';
-    
-    // Length
-    if (password.length >= 8) score += 1;
-    if (password.length >= 12) score += 1;
-    
-    // Complexity
-    if (/[a-z]/.test(password)) score += 1;
-    if (/[A-Z]/.test(password)) score += 1;
-    if (/[0-9]/.test(password)) score += 1;
-    if (/[^a-zA-Z0-9]/.test(password)) score += 1;
-    
-    // Determine strength
-    if (score >= 5) {
-        level = 'strong';
-        text = 'Strong';
-    } else if (score >= 3) {
-        level = 'medium';
-        text = 'Medium';
-    }
-    
-    return {
-        score,
-        level,
-        text,
-        percentage: (score / 6) * 100
-    };
-}
-
-// ===== GOOGLE SIGN-IN =====
-function setupGoogleSignIn() {
-    // This would be implemented with actual Google Sign-In API
-    window.handleGoogleLogin = function(response) {
-        console.log('Google Sign-In Response:', response);
-        
-        // Decode the JWT token to get user info
-        try {
-            const userInfo = parseJwt(response.credential);
-            
-            // Handle Google sign-in for mentee
-            handleGoogleSignInFlow(userInfo);
-            
-        } catch (error) {
-            console.error('Google Sign-In Error:', error);
-            showNotification('Google Sign-In failed. Please try again.', 'error');
-        }
-    };
-}
-
-function handleGoogleSignInFlow(userInfo) {
-    showNotification('Google Sign-In successful! Setting up your account...', 'success');
-    
-    // Store user session
-    storeUserSession({
-        type: 'mentee',
-        email: userInfo.email,
-        name: userInfo.name,
-        picture: userInfo.picture,
-        googleId: userInfo.sub,
-        loginTime: new Date().toISOString()
-    });
-    
-    // Check if user exists in our system
-    const existingMentees = JSON.parse(localStorage.getItem('mentees') || '[]');
-    const existingMentee = existingMentees.find(m => m.email === userInfo.email);
-    
-    if (existingMentee) {
-        // Redirect to dashboard
-        setTimeout(() => {
-            window.location.href = 'mentee-dashboard.html';
-        }, 1500);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+        button.setAttribute('title', 'Hide password');
     } else {
-        // Pre-fill registration form
-        fillGoogleUserInfo(userInfo);
-        showRegisterForm();
-        showNotification('Please complete your student profile to continue', 'info');
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+        button.setAttribute('title', 'Show password');
     }
-}
+};
 
-function fillGoogleUserInfo(userInfo) {
-    // Pre-fill form with Google data
-    if (userInfo.given_name) {
-        document.getElementById('firstName').value = userInfo.given_name;
-    }
-    if (userInfo.family_name) {
-        document.getElementById('lastName').value = userInfo.family_name;
-    }
-    if (userInfo.email) {
-        document.getElementById('email').value = userInfo.email;
-    }
-}
+window.showRegisterForm = function() {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    if (loginForm) loginForm.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'block';
+    history.pushState({form: 'register'}, '', '#register');
+};
 
-function parseJwt(token) {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    
-    return JSON.parse(jsonPayload);
-}
+window.showLoginForm = function() {
+    const registerForm = document.getElementById('registerForm');
+    const loginForm = document.getElementById('loginForm');
+    if (registerForm) registerForm.style.display = 'none';
+    if (loginForm) loginForm.style.display = 'block';
+    history.pushState({form: 'login'}, '', '#login');
+};
 
-// ===== SESSION MANAGEMENT =====
-function storeUserSession(userData) {
-    sessionStorage.setItem('currentUser', JSON.stringify(userData));
-    localStorage.setItem('lastLogin', new Date().toISOString());
-}
-
-// ===== NOTIFICATION SYSTEM =====
-function showNotification(message, type = 'info', duration = 5000) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `auth-notification notification-${type}`;
+// ===== INITIALIZE WHEN DOM IS LOADED =====
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Mentee Authentication System Initialized');
     
-    const icon = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-triangle',
-        warning: 'fa-exclamation-circle',
-        info: 'fa-info-circle'
-    }[type];
+    const menteeLogin = new MenteeLogin();
     
-    const bgColor = {
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#3b82f6'
-    }[type];
-    
-    // Format message for multi-line display
-    const formattedMessage = message.replace(/\n/g, '<br>');
-    
-    notification.innerHTML = `
-        <div style="
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${bgColor};
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            z-index: 10000;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            max-width: 400px;
-            animation: slideIn 0.3s ease;
-            white-space: pre-line;
-            line-height: 1.4;
-        ">
-            <i class="fas ${icon}" style="margin-top: 2px;"></i>
-            <span style="flex: 1;">${formattedMessage}</span>
-            <button onclick="this.parentElement.parentElement.remove()" style="
-                background: rgba(255,255,255,0.2);
-                border: none;
-                color: white;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                cursor: pointer;
-                margin-left: auto;
-                flex-shrink: 0;
-            ">&times;</button>
-        </div>
-        <style>
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
+    // Check for remembered email
+    const rememberedEmail = localStorage.getItem('rememberEmail');
+    if (rememberedEmail) {
+        const emailInput = document.getElementById('loginEmail');
+        const rememberCheckbox = document.querySelector('input[name="remember"]');
+        if (emailInput) {
+            emailInput.value = rememberedEmail;
+            if (rememberCheckbox) {
+                rememberCheckbox.checked = true;
             }
-        </style>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after specified duration
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
         }
-    }, duration);
-}
-
-// ===== UTILITY FUNCTIONS =====
-function formatPhoneNumber(input) {
-    let value = input.value.replace(/\D/g, '');
-    
-    if (value.length >= 10) {
-        value = value.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-    }
-    
-    input.value = value;
-}
-
-// Auto-format phone number
-document.addEventListener('DOMContentLoaded', function() {
-    const phoneInput = document.getElementById('mobile');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function() {
-            formatPhoneNumber(this);
-        });
     }
 });
 
 // ===== EXPORT FOR TESTING =====
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        handleLogin,
-        handleRegistration,
-        validateEmail,
-        validatePhone,
-        calculatePasswordStrength
-    };
+    module.exports = MenteeLogin;
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Mentor-Mentee Platform</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="login.css">
 </head>
 <body>
     <div class="auth-container">
@@ -52,140 +52,9 @@
     <div id="errorMessage" class="error-message" style="display: none;"></div>
     <div id="successMessage" class="success-message" style="display: none;"></div>
 
-    <style>
-        .user-type-indicator {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 15px;
-            text-align: center;
-            border: 2px solid #e9ecef;
-        }
-        
-        .user-type-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin: 0 10px;
-        }
-        
-        .user-type-badge.mentor {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        .user-type-badge.mentee {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-        }
-        
-        .switch-type-btn {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .switch-type-btn:hover {
-            background: #5a6268;
-            transform: translateY(-1px);
-        }
-    </style>
-
-    <script src="auth.js"></script>
-    <script>
-        // Update UI based on selected user type
-        function updateUserTypeUI() {
-            const userType = localStorage.getItem('selectedUserType') || 'mentee';
-            document.getElementById('loginTitle').textContent = `${userType.charAt(0).toUpperCase() + userType.slice(1)} Login`;
-            document.getElementById('loginSubtitle').textContent = `Sign in to your ${userType} account`;
-            document.getElementById('userTypeDisplay').textContent = userType.charAt(0).toUpperCase() + userType.slice(1);
-            
-            const switchBtn = document.querySelector('.switch-type-btn');
-            if (userType === 'mentor') {
-                switchBtn.textContent = 'Switch to Mentee';
-                document.getElementById('userTypeDisplay').className = 'user-type-badge mentor';
-            } else {
-                switchBtn.textContent = 'Switch to Mentor';
-                document.getElementById('userTypeDisplay').className = 'user-type-badge mentee';
-            }
-        }
-        
-        // Switch user type function
-        function switchUserType() {
-            const currentType = localStorage.getItem('selectedUserType') || 'mentee';
-            const newType = currentType === 'mentor' ? 'mentee' : 'mentor';
-            localStorage.setItem('selectedUserType', newType);
-            updateUserTypeUI();
-        }
-        
-        // Initialize UI
-        updateUserTypeUI();
-        
-        // Handle login form submission
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const userType = localStorage.getItem('selectedUserType') || 'mentee';
-            const loginData = {
-                email: formData.get('email'),
-                password: formData.get('password'),
-                userType: userType
-            };
-            
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(loginData)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    localStorage.setItem('authToken', result.token);
-                    localStorage.setItem('user', JSON.stringify(result.user));
-                    
-                    showMessage('Login successful! Redirecting...', 'success');
-                    
-                    setTimeout(() => {
-                        if (result.user.userType === 'mentor') {
-                            window.location.href = '/mentor-dashboard';
-                        } else {
-                            window.location.href = '/mentee-dashboard';
-                        }
-                    }, 1500);
-                } else {
-                    showMessage(result.message || 'Login failed', 'error');
-                }
-            } catch (error) {
-                showMessage('An error occurred. Please try again.', 'error');
-            }
-        });
-        
-        function signInWithGoogle() {
-            const userType = localStorage.getItem('selectedUserType') || 'mentee';
-            window.location.href = `/auth/google?userType=${userType}`;
-        }
-        
-        function showMessage(message, type) {
-            const messageEl = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
-            messageEl.textContent = message;
-            messageEl.style.display = 'block';
-            
-            setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, 5000);
-        }
-    </script>
+    
+    <script src="mentee-auth.js"></script>
+    <script src="login-security.js"></script>
+    
 </body>
 </html>

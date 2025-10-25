@@ -33,6 +33,823 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Enhanced Mentor Dashboard initialized successfully');
 });
 
+
+let currentRequestId = null;
+
+// Check authentication
+const token = localStorage.getItem('authToken');
+if (!token) {
+    window.location.href = '/login';
+}
+
+// Load dashboard data
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadProfile();
+    await loadRequests();
+    await loadSessions();
+    await loadEarnings();
+    await loadPlatformConfig();
+    setupRealtime();
+});
+
+// Load platform configuration
+async function loadPlatformConfig() {
+    try {
+        const response = await fetch('/api/platform-config');
+        if (response.ok) {
+            const config = await response.json();
+            
+            // Update commission displays
+            const commissionElements = document.querySelectorAll('.commission-percentage');
+            commissionElements.forEach(el => {
+                el.textContent = `${config.commissionPercentage}%`;
+            });
+            
+            const mentorPercentage = 100 - config.commissionPercentage;
+            const mentorElements = document.querySelectorAll('.mentor-percentage');
+            mentorElements.forEach(el => {
+                el.textContent = `${mentorPercentage}%`;
+            });
+        }
+    } catch (error) {
+        console.error('Error loading platform config:', error);
+    }
+}
+
+// Profile menu toggle
+function toggleProfileMenu() {
+    const menu = document.getElementById('profileMenu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+// Close profile menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.profile-dropdown')) {
+        document.getElementById('profileMenu').style.display = 'none';
+    }
+});
+
+async function loadProfile() {
+    try {
+        const response = await fetch('/api/user/profile', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const user = await response.json();
+            document.getElementById('userName').textContent = user.first_name;
+            document.getElementById('userNameShort').textContent = user.first_name;
+            document.getElementById('mentorUpiId').textContent = user.upi_id || 'Not set';
+            
+            if (user.profile_picture) {
+                document.getElementById('profilePic').src = user.profile_picture;
+                document.getElementById('profilePicLarge').src = user.profile_picture;
+            }
+            
+            // Display enhanced profile details
+            const profileDetails = `
+                <div class="profile-grid">
+                    <div class="profile-item">
+                        <label>Full Name</label>
+                        <span>${user.first_name} ${user.last_name}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Email</label>
+                        <span>${user.email}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Age</label>
+                        <span>${user.age || 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Education</label>
+                        <span>${user.education || 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Institution</label>
+                        <span>${user.institution || 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Current Pursuit</label>
+                        <span>${user.current_pursuit || 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Hourly Rate</label>
+                        <span class="price-highlight">₹${user.hourly_rate}/hour</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Languages</label>
+                        <span>${user.languages ? user.languages.join(', ') : 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Teaching Subjects</label>
+                        <span>${user.subjects ? user.subjects.join(', ') : 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Available Hours</label>
+                        <span>${user.available_hours ? user.available_hours.join(', ') : 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Mobile Number</label>
+                        <span>${user.mobile_number || 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>UPI ID</label>
+                        <span>${user.upi_id || 'Not set'}</span>
+                    </div>
+                    ${user.qualifications ? `
+                        <div class="profile-item full-width">
+                            <label>Qualifications & Experience</label>
+                            <span>${user.qualifications}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('profileDetails').innerHTML = profileDetails;
+        }
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+// ===========================
+// Mentor Dashboard - Requests
+// ===========================
+
+async function loadRequests() {
+    const requestsList = document.getElementById('requestsList');
+    const totalRequestsEl = document.getElementById('totalRequests');
+
+    if (!requestsList) {
+        console.error("❌ Element with ID 'requestsList' not found.");
+        return;
+    }
+
+    // Show loading spinner
+    requestsList.innerHTML = `
+        <div class="loading-requests">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading connection requests...</p>
+        </div>
+    `;
+
+    try {
+        // Ensure the token is available
+        if (typeof token === 'undefined' || !token) {
+            throw new Error("Authorization token not found. Please log in again.");
+        }
+
+        // Fetch pending connection requests
+        const response = await fetch('/api/mentor/requests/pending', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Handle non-successful responses
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ Failed to load requests:", response.status, errorText);
+
+            requestsList.innerHTML = `
+                <div class="no-requests error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Failed to Load Requests</h3>
+                    <p>${
+                        response.status === 401
+                            ? 'Unauthorized access. Please log in again.'
+                            : 'Something went wrong while fetching requests.'
+                    }</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Parse the JSON response
+        const result = await response.json();
+        const requests = result.data || [];
+
+        console.log('Fetched requests:', requests);
+
+        // Update total requests count if element exists
+        if (totalRequestsEl) totalRequestsEl.textContent = requests.length;
+
+        // Handle empty request list
+        if (!requests.length) {
+            requestsList.innerHTML = `
+                <div class="no-requests">
+                    <i class="fas fa-user-clock"></i>
+                    <h3>No Connection Requests</h3>
+                    <p>When mentees want to connect with you, they'll appear here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Generate HTML for each mentee request
+        const requestsHtml = requests
+            .map(
+                (request) => `
+            <div class="mentee-request-card enhanced">
+                <div class="mentee-header">
+                    <img src="${request.profile_picture || '/uploads/default-avatar.png'}" 
+                         alt="${request.first_name}">
+                    <div class="mentee-basic">
+                        <h3>${request.first_name} ${request.last_name}</h3>
+                        <div class="mentee-info">
+                            <span><i class="fas fa-envelope"></i> ${request.email}</span>
+                        </div>
+                    </div>
+                    <div class="request-time">
+                        <small>
+                            <i class="fas fa-clock"></i> 
+                            ${new Date(request.created_at).toLocaleDateString()}
+                        </small>
+                    </div>
+                </div>
+
+                <div class="mentee-details">
+                    <div class="detail-section">
+                        <h4><i class="fas fa-book"></i> Wants to Learn:</h4>
+                        <p class="subject-highlight">${request.subject}</p>
+                    </div>
+
+                    ${
+                        request.message
+                            ? `
+                        <div class="detail-section">
+                            <h4><i class="fas fa-comment"></i> Message:</h4>
+                            <p class="mentee-message">${request.message}</p>
+                        </div>
+                    `
+                            : ''
+                    }
+
+                    <div class="mentee-preferences">
+                        <div class="preference-item">
+                            <i class="fas fa-clock"></i>
+                            <label>Preferred Time:</label>
+                            <span>${request.preferred_time || 'Flexible'}</span>
+                        </div>
+                        <div class="preference-item">
+                            <i class="fas fa-star"></i>
+                            <label>Interests:</label>
+                            <span>${
+                                request.interests
+                                    ? request.interests.join(', ')
+                                    : 'General learning'
+                            }</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="request-actions">
+                    <button class="btn btn-accept" 
+                            onclick="acceptRequest(${request.id}, '${request.first_name} ${request.last_name}', '${request.subject}')">
+                        <i class="fas fa-check-circle"></i> Accept Request
+                    </button>
+                    <button class="btn btn-reject" onclick="rejectRequest(${request.id})">
+                        <i class="fas fa-times-circle"></i> Decline
+                    </button>
+                </div>
+            </div>
+        `
+            )
+            .join('');
+
+        // Render all requests
+        requestsList.innerHTML = requestsHtml;
+
+    } catch (error) {
+        console.error('🔥 Error loading requests:', error);
+
+        requestsList.innerHTML = `
+            <div class="no-requests error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Unable to Load Requests</h3>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// Optional: Automatically load requests on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadRequests();
+});
+
+
+async function loadSessions() {
+    try {
+        const response = await fetch('/api/mentor/sessions', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const sessions = await response.json();
+            document.getElementById('upcomingSessions').textContent = sessions.length;
+            
+            const sessionsHtml = sessions.length > 0 ?
+                sessions.map(session => `
+                    <div class="session-card">
+                        <div class="session-info">
+                            <div>
+                                <strong>Mentee:</strong> ${session.mentee_first_name} ${session.mentee_last_name}
+                            </div>
+                            <div>
+                                <strong>Subject:</strong> ${session.subject}
+                            </div>
+                            <div>
+                                <strong>Date & Time:</strong> ${new Date(session.scheduled_time).toLocaleString()}
+                            </div>
+                            <div>
+                                <strong>Amount:</strong> ₹${session.amount}
+                            </div>
+                        </div>
+                        ${session.meeting_link ? `<p><strong>Meeting Link:</strong> <a href="${session.meeting_link}" target="_blank">${session.meeting_link}</a></p>` : ''}
+                    </div>
+                `).join('') :
+                '<p>No scheduled sessions</p>';
+            
+            document.getElementById('sessionsList').innerHTML = sessionsHtml;
+        }
+    } catch (error) {
+        console.error('Error loading sessions:', error);
+    }
+}
+
+async function loadEarnings() {
+    try {
+        const response = await fetch('/api/mentor/earnings', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const earnings = await response.json();
+            document.getElementById('totalEarnings').textContent = `₹${earnings.total_earnings || 0}`;
+            document.getElementById('totalEarningsDetailed').textContent = `₹${earnings.total_earnings || 0}`;
+            document.getElementById('pendingEarnings').textContent = `₹${earnings.pending_earnings || 0}`;
+            document.getElementById('completedSessions').textContent = earnings.total_sessions || 0;
+            document.getElementById('sessionsCount').textContent = earnings.total_sessions || 0;
+        }
+    } catch (error) {
+        console.error('Error loading earnings:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    let currentTab = 'requests'; // Default tab
+
+    function showSection(sectionName) {
+        console.log("Switching to section:", sectionName);
+
+        // Hide all sections
+        document.querySelectorAll('.dashboard-section').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        // Show the selected section
+        const targetSection = document.getElementById(sectionName + 'Section');
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        } else {
+            console.error(`Section ${sectionName}Section not found!`);
+        }
+
+        // Update tab button states
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if (btn.getAttribute('data-tab') === sectionName) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+            // Remember the current tab
+            currentTab = sectionName;
+        }
+
+        // Attach click listeners to each tab button
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const tab = this.getAttribute('data-tab');
+                showSection(tab);
+            });
+        });
+
+        // Show default tab on load
+        showSection(currentTab);
+    });
+
+function acceptRequest(requestId, menteeName, subject) {
+    currentRequestId = requestId;
+    
+    // Show mentee preview in modal
+    document.getElementById('selectedMenteePreview').innerHTML = `
+        <div class="mentee-preview-card">
+            <div class="preview-header">
+                <i class="fas fa-user-graduate"></i>
+                <div>
+                    <h4>${menteeName}</h4>
+                    <p>Wants to learn: <span class="subject">${subject}</span></p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('acceptModal').style.display = 'flex';
+    
+    // Set minimum datetime to current time
+    const now = new Date();
+    const minDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('meetingTime').min = minDateTime;
+}
+
+function closeModal() {
+    document.getElementById('acceptModal').style.display = 'none';
+    currentRequestId = null;
+}
+
+document.getElementById('acceptForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const meetingTime = document.getElementById('meetingTime').value;
+    const meetingLink = document.getElementById('meetingLink').value;
+    
+    try {
+        const response = await fetch(`/api/mentor/requests/${currentRequestId}/accept`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                meetingTime: meetingTime,
+                meetingLink: meetingLink
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showMessage('Request accepted and session scheduled!', 'success');
+            closeModal();
+            await loadRequests();
+            await loadSessions();
+        } else {
+            showMessage(result.message || 'Error accepting request', 'error');
+        }
+    } catch (error) {
+        showMessage('An error occurred', 'error');
+    }
+});
+
+async function rejectRequest(requestId) {
+    if (!confirm('Are you sure you want to reject this request?')) return;
+    
+    try {
+        const response = await fetch(`/api/mentor/requests/${requestId}/decline`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reason: 'Not available'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showMessage('Request rejected', 'success');
+            await loadRequests();
+        } else {
+            showMessage(result.message || 'Error rejecting request', 'error');
+        }
+    } catch (error) {
+        showMessage('An error occurred', 'error');
+    }
+}
+
+async function uploadProfilePic() {
+    const fileInput = document.getElementById('profilePicUpload');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showMessage('Please select a file', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('profilePic', file);
+    
+    try {
+        const response = await fetch('/api/upload-profile-pic', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showMessage('Profile picture updated!', 'success');
+            document.getElementById('profilePic').src = result.profilePicture;
+        } else {
+            showMessage(result.message || 'Error uploading file', 'error');
+        }
+    } catch (error) {
+        showMessage('An error occurred', 'error');
+    }
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    window.location.href = '/';
+}
+
+// Show customer care modal
+function showCustomerCare() {
+    document.getElementById('customerCareModal').style.display = 'flex';
+}
+
+// Close customer care modal
+function closeCustomerCare() {
+    document.getElementById('customerCareModal').style.display = 'none';
+}
+
+// Copy mentor UPI ID
+function copyMentorUpi() {
+    const upiId = document.getElementById('mentorUpiId').textContent;
+    navigator.clipboard.writeText(upiId).then(() => {
+        showMessage('UPI ID copied to clipboard! 📋', 'success');
+    });
+}
+
+// Show sections with tab management
+function showSection(sectionName) {
+    // Hide all sections
+    document.querySelectorAll('section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(`${sectionName}Section`).style.display = 'block';
+    
+    // Add active class to clicked tab
+    if (event && event.target.classList.contains('tab-btn')) {
+        event.target.classList.add('active');
+    }
+}
+
+// Upload profile picture with enhanced feedback
+document.getElementById('profilePicUpload').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('profilePic', file);
+    
+    try {
+        const response = await fetch('/api/upload-profile-pic', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showMessage('Profile picture updated successfully! 📸', 'success');
+            document.getElementById('profilePic').src = result.profilePicture;
+            document.getElementById('profilePicLarge').src = result.profilePicture;
+        } else {
+            showMessage(result.message || 'Error uploading file', 'error');
+        }
+    } catch (error) {
+        showMessage('An error occurred while uploading', 'error');
+    }
+});
+
+// Realtime setup and popup handler
+function setupRealtime() {
+    try {
+        const socket = io({ auth: { token } });
+
+        socket.on('connect', () => {
+            console.log('Connected to realtime server');
+        });
+
+        socket.on('request:new', async (payload) => {
+            showIncomingRequestModal(payload);
+
+            // Assuming you wanted to send this payload to a server endpoint
+            const body = { requestId: payload.id, status: 'received' };
+            try {
+                await fetch('/api/request/ack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            } catch (err) {
+                console.error('Failed to acknowledge request:', err);
+            }
+        });
+
+        socket.on('meeting:start', (payload) => {
+            showMeetingMiniWindow(payload);
+        });
+
+        socket.on('meeting:message', (msg) => {
+            appendMeetingMessage(msg, 'incoming');
+        });
+
+    } catch (e) {
+        console.warn('Realtime not available:', e.message);
+    }
+}
+
+
+function showIncomingRequestModal(payload) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> New Connection Request</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="mentee-preview">
+                <div class="mentee-preview-card">
+                    <img src="${payload.mentee?.avatar || '/uploads/default-avatar.png'}" alt="${payload.mentee?.firstName || ''}">
+                    <div>
+                        <h4>${(payload.mentee?.firstName || '') + ' ' + (payload.mentee?.lastName || '')}</h4>
+                        ${payload.subject ? `<p><strong>Subject:</strong> ${payload.subject}</p>` : ''}
+                        ${payload.message ? `<p><strong>Message:</strong> ${payload.message}</p>` : ''}
+                        ${payload.preferredTime ? `<p><strong>Preferred Time:</strong> ${payload.preferredTime}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-clock"></i> Meeting Date & Time</label>
+                <input type="datetime-local" class="meeting-time-input" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-video"></i> Meeting Link (optional)</label>
+                <input type="url" class="meeting-link-input" placeholder="https://meet.google.com/...">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-accept"><i class="fas fa-check"></i> Accept</button>
+                <button class="btn btn-reject"><i class="fas fa-times"></i> Deny</button>
+            </div>
+        </div>`;
+
+    function close() { document.body.removeChild(modal); }
+
+    modal.querySelector('.modal-overlay').addEventListener('click', close);
+    modal.querySelector('.close-btn').addEventListener('click', close);
+    modal.querySelector('.btn-accept').addEventListener('click', async () => {
+        try {
+            const meetingTimeInput = modal.querySelector('.meeting-time-input');
+            const meetingLinkInput = modal.querySelector('.meeting-link-input');
+            const meetingTime = meetingTimeInput && meetingTimeInput.value ? meetingTimeInput.value : null;
+            const body = meetingTime ? { meetingTime, meetingLink: meetingLinkInput && meetingLinkInput.value ? meetingLinkInput.value : undefined } : {};
+            const resp = await fetch(`/api/mentor/requests/${payload.requestId}/accept`, {
+                method: 'POST',
+headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            if (resp.ok) {
+                showMessage('Accepted connection request', 'success');
+                close();
+                await loadRequests();
+                await loadSessions();
+            } else {
+                const r = await resp.json().catch(() => ({}));
+                showMessage(r.error || 'Failed to accept', 'error');
+            }
+        } catch (e) {
+            showMessage('Network error', 'error');
+        }
+    });
+    modal.querySelector('.btn-reject').addEventListener('click', async () => {
+        try {
+            const resp = await fetch(`/api/mentor/requests/${payload.requestId}/decline`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Not available' })
+            });
+            if (resp.ok) {
+                showMessage('Declined connection request', 'success');
+                close();
+                await loadRequests();
+            } else {
+                const r = await resp.json().catch(() => ({}));
+                showMessage(r.error || 'Failed to decline', 'error');
+            }
+        } catch (e) {
+            showMessage('Network error', 'error');
+        }
+    });
+
+    document.body.appendChild(modal);
+}
+
+// Mini meeting window + chat
+let meetingWindow = null;
+let meetingPeerId = null;
+let meetingSocket = null;
+
+function showMeetingMiniWindow(payload) {
+    meetingPeerId = (localStorage.getItem('userId') == payload.mentorId) ? payload.menteeId : payload.mentorId;
+    meetingSocket = io({ auth: { token } });
+
+    if (meetingWindow) {
+        document.body.removeChild(meetingWindow);
+    }
+    meetingWindow = document.createElement('div');
+    meetingWindow.style.cssText = 'position:fixed; bottom:20px; right:20px; width:360px; background:#fff; box-shadow:0 8px 25px rgba(0,0,0,0.15); border-radius:10px; z-index:2000; display:flex; flex-direction:column;';
+    meetingWindow.innerHTML = `
+        <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <div><strong>Meeting Started</strong><div style="font-size:12px;color:#666;">${new Date(payload.scheduledAt).toLocaleString()}</div></div>
+            <button class="close-mini" style="border:none;background:transparent;font-size:18px;cursor:pointer">&times;</button>
+        </div>
+        <div style="padding:10px;">
+            <div style="margin-bottom:8px; font-size:14px;">Meet link:</div>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:10px;">
+                <a href="${payload.meetLink}" target="_blank" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${payload.meetLink}</a>
+                <button class="send-link" style="padding:6px 8px;">Send</button>
+            </div>
+            <div class="chat" style="height:140px; overflow:auto; border:1px solid #eee; border-radius:6px; padding:6px; margin-bottom:8px;"></div>
+            <div style="display:flex; gap:6px;">
+                <input type="text" class="chat-input" placeholder="Type a message" style="flex:1; padding:6px; border:1px solid #ddd; border-radius:6px;">
+                <button class="chat-send" style="padding:6px 10px;">Send</button>
+            </div>
+        </div>`;
+
+    meetingWindow.querySelector('.close-mini').addEventListener('click', () => {
+        document.body.removeChild(meetingWindow); meetingWindow = null;
+    });
+    meetingWindow.querySelector('.send-link').addEventListener('click', () => {
+        if (!meetingSocket) return;
+        meetingSocket.emit('meeting:message', { toUserId: meetingPeerId, text: 'Join via this link', link: payload.meetLink });
+        appendMeetingMessage({ text: 'Link sent', link: payload.meetLink, fromUserId: localStorage.getItem('userId') }, 'outgoing');
+    });
+    meetingWindow.querySelector('.chat-send').addEventListener('click', () => {
+        const input = meetingWindow.querySelector('.chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value='';
+        if (!meetingSocket) return;
+        meetingSocket.emit('meeting:message', { toUserId: meetingPeerId, text });
+        appendMeetingMessage({ text, fromUserId: localStorage.getItem('userId') }, 'outgoing');
+    });
+
+    document.body.appendChild(meetingWindow);
+}
+
+function appendMeetingMessage(msg, direction) {
+    if (!meetingWindow) return;
+    const chat = meetingWindow.querySelector('.chat');
+    const div = document.createElement('div');
+    div.style.margin = '6px 0';
+    if (direction === 'outgoing') {
+        div.style.textAlign = 'right';
+    }
+    div.innerHTML = `${msg.text ? msg.text : ''} ${msg.link ? `<a href=\"${msg.link}\" target=\"_blank\">${msg.link}</a>` : ''}`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function showMessage(message, type) {
+    const messageEl = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
+    messageEl.textContent = message;
+    messageEl.style.display = 'block';
+    
+    setTimeout(() => {
+        messageEl.style.display = 'none';
+    }, 5000);
+}
+
+
 // ===== DASHBOARD INITIALIZATION =====
 function initializeDashboard() {
     // Show dashboard section by default
@@ -107,8 +924,8 @@ function updatePageTitle(title) {
 
 // ===== PROFILE DROPDOWN =====
 function setupProfileDropdown() {
-    const dropdownBtn = document.querySelector('.dropdown-btn');
-    const dropdownMenu = document.querySelector('.dropdown-menu');
+    const dropdownBtn = document.querySelector('.profile-btn');
+    const dropdownMenu = document.querySelector('.profile-menu');
     
     if (dropdownBtn && dropdownMenu) {
         dropdownBtn.addEventListener('click', function(e) {
@@ -134,18 +951,18 @@ function setupProfileDropdown() {
 }
 
 function showDropdown() {
-    const dropdownMenu = document.querySelector('.dropdown-menu');
+    const dropdownMenu = document.querySelector('.profile-menu');
     if (dropdownMenu) {
         dropdownMenu.style.display = 'block';
         setTimeout(() => {
             dropdownMenu.style.opacity = '1';
             dropdownMenu.style.transform = 'translateY(0)';
-        }, 10);
+        }, 100);
     }
 }
 
 function hideDropdown() {
-    const dropdownMenu = document.querySelector('.dropdown-menu');
+    const dropdownMenu = document.querySelector('.profile-menu');
     if (dropdownMenu) {
         dropdownMenu.style.opacity = '0';
         dropdownMenu.style.transform = 'translateY(-10px)';
