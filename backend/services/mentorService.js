@@ -1,4 +1,6 @@
-const db = require('./database');
+// const db = require('./database');
+const db = require('../legacy-files/database');
+
 
 class MentorService {
     // Get dashboard statistics for mentor
@@ -85,6 +87,34 @@ class MentorService {
         }
     }
 
+    // Get mentor details
+    async getMentorDetails(mentorId) {
+        try {
+            const mentor = await db.get(
+            `SELECT id, firstName AS first_name, lastName AS last_name, education, institution,
+                    current_pursuit, languages, subjects, qualifications, bio, profile_picture
+            FROM users
+            WHERE id = ? AND role = 'mentor'`,
+            [mentorId]
+            );
+
+            if (!mentor) return null;
+
+            // Parse JSON fields if stored as text (e.g., ["English","Hindi"])
+            if (typeof mentor.languages === 'string') {
+            try { mentor.languages = JSON.parse(mentor.languages); } catch { mentor.languages = [mentor.languages]; }
+            }
+            if (typeof mentor.subjects === 'string') {
+            try { mentor.subjects = JSON.parse(mentor.subjects); } catch { mentor.subjects = [mentor.subjects]; }
+            }
+
+            return mentor;
+        } catch (error) {
+            console.error('Error fetching mentor details from DB:', error);
+            throw error;
+        }
+    }
+    
     // Get mentor's sessions
     async getSessions(mentorId, options = {}) {
         try {

@@ -23,18 +23,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const connectForm = document.getElementById('connectForm');
-    if (connectForm) {
-        connectForm.addEventListener('submit', handleConnectFormSubmit);
-    }
-});
+// document.addEventListener('DOMContentLoaded', () => {
+//     const connectForm = document.getElementById('connectForm');
+//     if (connectForm) {
+//         connectForm.addEventListener('submit', handleConnectFormSubmit);
+//     }
+// });
 
 
-// ---------------- Initialize ----------------
-document.addEventListener('DOMContentLoaded', () => {
-    attachConnectFormHandler();
-});
+// // ---------------- Initialize ----------------
+// document.addEventListener('DOMContentLoaded', () => {
+//     attachConnectFormHandler();
+// });
 
     // Initialize all components
     await loadProfile();
@@ -276,9 +276,11 @@ function clearFilters() {
     searchMentors();
 }
 
-// ========================================
-// COMPLETE FIXED: DISPLAY MENTORS FUNCTION
-// ========================================
+// Global variable to track if handler is already attached
+let isFormHandlerAttached = false;
+
+// Global variable to track current mentor
+
 function displayMentors(mentors) {
     const mentorsGrid = document.getElementById('mentorsGrid');
     const mentorCount = document.getElementById('mentorCount');
@@ -372,9 +374,10 @@ function displayMentors(mentors) {
         `;
     }).join('');
 
-    // FIXED: Only attach to buttons inside mentor cards (not modal buttons)
+    // Attach event listeners to buttons
     mentorsGrid.querySelectorAll('.mentor-card .btn-connect').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            console.log('🟢 "Connect Now" button clicked');
             const card = e.target.closest('.mentor-card');
             const mentorId = card.getAttribute('data-mentor-id');
             const mentorName = card.getAttribute('data-mentor-name');
@@ -393,18 +396,27 @@ function displayMentors(mentors) {
 
 
 // ========================================
-// FIXED: CONNECT WITH MENTOR FUNCTION
+// CONNECT WITH MENTOR FUNCTION - FIXED
 // ========================================
 function connectWithMentor(mentorId, mentorName) {
-    console.log('Connect with mentor called:', mentorId, mentorName);
+    console.log('═══════════════════════════════════════');
+    console.log('🔵 connectWithMentor() called');
+    console.log('  Mentor ID:', mentorId);
+    console.log('  Mentor Name:', mentorName);
+    console.log('═══════════════════════════════════════');
+    
     currentMentorId = mentorId;
 
     const mentor = allMentors.find(m => m.id == mentorId);
     if (!mentor) {
-        console.error('Mentor not found:', mentorId);
+        console.error('❌ Mentor not found in allMentors array');
+        console.log('Available mentors:', allMentors.length);
         return;
     }
+    
+    console.log('✅ Mentor data found:', mentor);
 
+    // Update mentor preview
     const preview = document.getElementById('selectedMentorPreview');
     if (preview) {
         preview.innerHTML = `
@@ -417,121 +429,429 @@ function connectWithMentor(mentorId, mentorName) {
                 </div>
             </div>
         `;
+        console.log('✅ Mentor preview updated');
+    } else {
+        console.warn('⚠️ selectedMentorPreview element not found');
     }
 
+    // Get modal element
     const modal = document.getElementById('connectModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        console.log('Modal displayed');
+    if (!modal) {
+        console.error('❌ CRITICAL: Modal element #connectModal not found in DOM!');
+        console.log('Searching for modal-like elements...');
+        const modals = document.querySelectorAll('[class*="modal"]');
+        console.log('Found elements with "modal" in class:', modals.length);
+        modals.forEach(m => console.log('  -', m.id, m.className));
+        return;
     }
+    
+    console.log('✅ Modal element found');
+    console.log('Current display style:', window.getComputedStyle(modal).display);
+    console.log('Current visibility:', window.getComputedStyle(modal).visibility);
+    console.log('Current opacity:', window.getComputedStyle(modal).opacity);
+    console.log('Current z-index:', window.getComputedStyle(modal).zIndex);
+    
+    // Force display with multiple methods
+    modal.style.display = 'flex';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    modal.style.zIndex = '9999';
+    modal.classList.add('show'); // In case CSS uses .show class
+    
+    console.log('After setting display:');
+    console.log('  display:', modal.style.display);
+    console.log('  visibility:', modal.style.visibility);
+    console.log('  opacity:', modal.style.opacity);
+    
+    // Check if modal is actually visible
+    setTimeout(() => {
+        const computed = window.getComputedStyle(modal);
+        console.log('Computed styles after 100ms:');
+        console.log('  display:', computed.display);
+        console.log('  visibility:', computed.visibility);
+        console.log('  opacity:', computed.opacity);
+        console.log('  position:', computed.position);
+        
+        if (computed.display === 'none' || computed.visibility === 'hidden' || computed.opacity === '0') {
+            console.error('❌ Modal is still not visible! Check your CSS!');
+            console.log('Modal HTML:', modal.outerHTML.substring(0, 300));
+        } else {
+            console.log('✅ Modal should be visible now!');
+        }
+    }, 100);
 
     // Set modal title dynamically
     const title = document.getElementById('connectModalTitle');
-    if (title) title.textContent = `Connect with ${mentorName}`;
+    if (title) {
+        title.innerHTML = `<i class="fas fa-handshake"></i> Connect with ${mentorName}`;
+        console.log('✅ Modal title updated');
+    } else {
+        console.warn('⚠️ connectModalTitle element not found');
+    }
 
-    // Debug: Log form structure
+    // Attach form handler
+    console.log('Attaching form handler in 200ms...');
     setTimeout(() => {
-        const form = document.getElementById('connectForm');
-        console.log('Form element:', form);
-        console.log('Form buttons:', form ? form.querySelectorAll('button') : 'form not found');
-        
-        // CRITICAL FIX: Attach form handler AFTER modal is shown
         attachConnectFormHandler();
-    }, 100); // Small delay to ensure modal is fully rendered
+    }, 200);
 }
 
 
 // ========================================
-// COMPLETE FIXED: ATTACH FORM HANDLER (AGGRESSIVE APPROACH)
+// ATTACH FORM HANDLER
 // ========================================
 function attachConnectFormHandler() {
+    console.log('═══════════════════════════════════════');
+    console.log('🔵 attachConnectFormHandler() called');
+    console.log('═══════════════════════════════════════');
+    
     const connectForm = document.getElementById('connectForm');
+    
     if (!connectForm) {
-        console.warn('❌ connectForm not found!');
+        console.error('❌ Form #connectForm not found!');
         return;
     }
-
-    console.log('📋 Attaching handler to form:', connectForm);
     
-    // STEP 1: Find the submit button FIRST (before cloning)
-    let submitBtn = null;
+    console.log('✅ Form found');
+    
+    // Find all buttons
     const allButtons = connectForm.querySelectorAll('button');
+    console.log(`Found ${allButtons.length} button(s) in form:`);
     
-    allButtons.forEach(btn => {
-        const hasSubmitIcon = btn.querySelector('.fa-paper-plane');
-        if (hasSubmitIcon || btn.textContent.includes('Send Request')) {
-            submitBtn = btn;
-        }
+    allButtons.forEach((btn, index) => {
+        console.log(`  Button ${index + 1}: "${btn.textContent.trim()}" (type: ${btn.type})`);
     });
     
+    // Find submit button
+    let submitBtn = connectForm.querySelector('button[type="submit"]');
+    
     if (!submitBtn) {
-        console.error('❌ Submit button not found in form!');
+        console.warn('No type="submit" button found, looking by text...');
+        allButtons.forEach(btn => {
+            const text = btn.textContent.trim().toLowerCase();
+            if (text.includes('send') && !submitBtn) {
+                submitBtn = btn;
+            }
+        });
+    }
+    
+    if (!submitBtn) {
+        console.error('❌ No submit button found!');
         return;
     }
     
     console.log('✅ Submit button identified:', submitBtn.textContent.trim());
     
-    // STEP 2: AGGRESSIVE FIX - Wrap the button click with a div overlay
-    const buttonWrapper = document.createElement('div');
-    buttonWrapper.style.position = 'relative';
-    buttonWrapper.style.display = 'inline-block';
+    // Remove any existing listeners by cloning
+    const newForm = connectForm.cloneNode(true);
+    connectForm.parentNode.replaceChild(newForm, connectForm);
+    const form = document.getElementById('connectForm');
     
-    // Create an invisible overlay that captures ALL clicks
-    const clickCatcher = document.createElement('div');
-    clickCatcher.style.position = 'absolute';
-    clickCatcher.style.top = '0';
-    clickCatcher.style.left = '0';
-    clickCatcher.style.width = '100%';
-    clickCatcher.style.height = '100%';
-    clickCatcher.style.zIndex = '9999';
-    clickCatcher.style.cursor = 'pointer';
-    clickCatcher.style.backgroundColor = 'transparent';
+    // Get fresh button reference
+    const freshSubmitBtn = form.querySelector('button[type="submit"]') || 
+                          Array.from(form.querySelectorAll('button')).find(b => 
+                              b.textContent.toLowerCase().includes('send'));
     
-    // Wrap the button
-    submitBtn.parentNode.insertBefore(buttonWrapper, submitBtn);
-    buttonWrapper.appendChild(submitBtn);
-    buttonWrapper.appendChild(clickCatcher);
-    
-    console.log('🔧 Button wrapped with click catcher');
-    
-    // STEP 3: Attach handler to the overlay (this will catch ALL clicks)
-    clickCatcher.addEventListener('click', function(e) {
+    // Attach event listeners
+    form.addEventListener('submit', function(e) {
+        console.log('🎯 FORM SUBMIT EVENT FIRED!');
         e.preventDefault();
         e.stopPropagation();
-        e.stopImmediatePropagation();
-        console.log('🎯 CLICK CATCHER TRIGGERED!');
-        console.log('📤 Calling handleConnectFormSubmit...');
-        handleConnectFormSubmit(e, connectForm);
+        showConfirmationDialog(form);
+        return false;
     }, true);
     
-    // STEP 4: Also attach to the button itself as backup
-    submitBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('🎯 Button onclick fired (backup)');
-        handleConnectFormSubmit(e, connectForm);
-        return false;
-    };
+    if (freshSubmitBtn) {
+        freshSubmitBtn.addEventListener('click', function(e) {
+            console.log('🎯 BUTTON CLICK EVENT FIRED!');
+            e.preventDefault();
+            e.stopPropagation();
+            showConfirmationDialog(form);
+            return false;
+        }, true);
+        
+        // Ensure button doesn't have onclick attribute
+        freshSubmitBtn.removeAttribute('onclick');
+    }
     
-    console.log('✅ Form handler attached with click catcher!');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ Event listeners attached!');
+    console.log('═══════════════════════════════════════');
+}
+
+
+// ========================================
+// SHOW CONFIRMATION DIALOG
+// ========================================
+function showConfirmationDialog(form) {
+    console.log('═══════════════════════════════════════');
+    console.log('🎯 showConfirmationDialog() called!');
+    console.log('═══════════════════════════════════════');
+    
+    // Extract form data
+    const formData = new FormData(form);
+    
+    console.log('Form data:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: "${value}"`);
+    }
+    
+    const subject = formData.get('subject') || form.querySelector('#subject')?.value || 'Not specified';
+    const preferredTime = formData.get('preferredTime') || form.querySelector('#preferredTime')?.value || 'Not specified';
+    const message = formData.get('message') || form.querySelector('#message')?.value || 'No message';
+    
+    // Get mentor name from current context
+    const mentorName = document.getElementById('connectModalTitle')?.textContent.replace('Connect with', '').trim() || 'Mentor';
+    
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'confirmationOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    // Create dialog
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease;
+    `;
+    
+    // Dialog content
+    dialog.innerHTML = `
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideIn {
+                from { transform: translateY(-50px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            .confirm-title {
+                font-size: 24px;
+                font-weight: bold;
+                color: #333;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+            }
+            .confirm-icon {
+                width: 40px;
+                height: 40px;
+                background-color: #4CAF50;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 15px;
+                font-size: 20px;
+                color: white;
+            }
+            .confirm-details {
+                background-color: #f5f5f5;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            .confirm-row {
+                margin-bottom: 15px;
+                display: flex;
+                flex-direction: column;
+            }
+            .confirm-row:last-child {
+                margin-bottom: 0;
+            }
+            .confirm-label {
+                font-weight: 600;
+                color: #666;
+                font-size: 12px;
+                text-transform: uppercase;
+                margin-bottom: 5px;
+            }
+            .confirm-value {
+                color: #333;
+                font-size: 16px;
+                word-wrap: break-word;
+            }
+            .confirm-buttons {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+            .confirm-btn {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 6px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            .confirm-btn-cancel {
+                background-color: #f0f0f0;
+                color: #333;
+            }
+            .confirm-btn-cancel:hover {
+                background-color: #e0e0e0;
+            }
+            .confirm-btn-send {
+                background-color: #4CAF50;
+                color: white;
+            }
+            .confirm-btn-send:hover {
+                background-color: #45a049;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+            }
+        </style>
+        
+        <div class="confirm-title">
+            <div class="confirm-icon">✓</div>
+            Confirm Connection Request
+        </div>
+        
+        <div class="confirm-details">
+            <div class="confirm-row">
+                <div class="confirm-label">Mentor</div>
+                <div class="confirm-value">${escapeHtml(mentorName)}</div>
+            </div>
+            <div class="confirm-row">
+                <div class="confirm-label">Subject</div>
+                <div class="confirm-value">${escapeHtml(subject)}</div>
+            </div>
+            <div class="confirm-row">
+                <div class="confirm-label">Preferred Time</div>
+                <div class="confirm-value">${escapeHtml(preferredTime)}</div>
+            </div>
+            <div class="confirm-row">
+                <div class="confirm-label">Message</div>
+                <div class="confirm-value">${escapeHtml(message)}</div>
+            </div>
+        </div>
+        
+        <div class="confirm-buttons">
+            <button class="confirm-btn confirm-btn-cancel" id="cancelBtn">Cancel</button>
+            <button class="confirm-btn confirm-btn-send" id="sendRequestBtn">Send Request</button>
+        </div>
+    `;
+    
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    
+    console.log('✅ Confirmation dialog added to DOM');
+    
+    // Add event listeners
+    document.getElementById('cancelBtn').addEventListener('click', function() {
+        console.log('❌ Request cancelled');
+        document.body.removeChild(overlay);
+    });
+    
+    document.getElementById('sendRequestBtn').addEventListener('click', function() {
+        console.log('✅ Request confirmed, sending...');
+        document.body.removeChild(overlay);
+        handleConnectFormSubmit(form);
+    });
+    
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            console.log('❌ Request cancelled (clicked outside)');
+            document.body.removeChild(overlay);
+        }
+    });
+    
+    // Close on Escape key
+    const escapeHandler = function(e) {
+        if (e.key === 'Escape') {
+            console.log('❌ Request cancelled (Escape key)');
+            if (document.getElementById('confirmationOverlay')) {
+                document.body.removeChild(overlay);
+            }
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+
+
+// ========================================
+// HELPER: ESCAPE HTML
+// ========================================
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // ========================================
-// FIXED: HANDLE FORM SUBMIT
+// CLOSE MODAL FUNCTION
 // ========================================
-async function handleConnectFormSubmit(e, formElement) {
-    e.preventDefault();
-    console.log('🚀 handleConnectFormSubmit called!');
+function closeConnectModal() {
+    console.log('═══════════════════════════════════════');
+    console.log('🔒 closeConnectModal() called');
     
-    // Get values from the form element passed as parameter
-    const form = formElement || e.target;
-    const subject = form.querySelector('#subject')?.value;
-    const message = form.querySelector('#message')?.value;
-    const preferredTime = form.querySelector('#preferredTime')?.value;
+    const modal = document.getElementById('connectModal');
+    if (!modal) {
+        console.error('❌ Modal element not found!');
+        return;
+    }
+    
+    console.log('Current modal display:', modal.style.display);
+    
+    // Hide modal with multiple methods to ensure it works
+    modal.style.display = 'none';
+    modal.style.visibility = 'hidden';
+    modal.style.opacity = '0';
+    modal.classList.remove('show');
+    
+    console.log('After setting display to none:', modal.style.display);
+    
+    // Reset form
+    const connectForm = document.getElementById('connectForm');
+    if (connectForm) {
+        connectForm.reset();
+        console.log('✅ Form reset');
+    }
+    
+    // Clear current mentor
+    currentMentorId = null;
+    
+    console.log('✅ Modal closed successfully');
+    console.log('═══════════════════════════════════════');
+}
+
+
+// ========================================
+// HANDLE FORM SUBMIT
+// ========================================
+async function handleConnectFormSubmit(formElement) {
+    console.log('═══════════════════════════════════════');
+    console.log('🚀 handleConnectFormSubmit() called!');
+    console.log('═══════════════════════════════════════');
+    
+    // Extract values from form fields
+    const subject = formElement.querySelector('#subject')?.value || '';
+    const message = formElement.querySelector('#message')?.value || '';
+    const preferredTime = formElement.querySelector('#preferredTime')?.value || '';
     
     console.log('Form data:', { subject, message, preferredTime, currentMentorId });
 
+    // Validation
     if (!currentMentorId || !token) {
         showMessage('Authentication error. Please log in again.', 'error');
         return;
@@ -560,38 +880,32 @@ async function handleConnectFormSubmit(e, formElement) {
 
         const result = await response.json();
         console.log('API Response:', result);
-
-        if (response.ok) {
+        if (result.success) {
             showSuccessPopup('Connection request sent successfully! 🎉');
-            closeConnectModal();
+            console.log("closing modal after successful request...");
         } else {
             showMessage(result.message || 'Error sending request', 'error');
+            console.log("closing modal after unsuccessful request...");
         }
     } catch (error) {
         console.error('Connection request error:', error);
         showMessage('An error occurred while sending the request', 'error');
     }
-}
-
-// ========================================
-// CLOSE MODAL FUNCTION
-// ========================================
-function closeConnectModal() {
-    const modal = document.getElementById('connectModal');
-    if (modal) modal.style.display = 'none';
-    
-    const connectForm = document.getElementById('connectForm');
-    if (connectForm) connectForm.reset();
-    
-    currentMentorId = null;
+    closeConnectModal();
 }
 
 
 async function viewMentorProfile(mentorId) {
     try {
-        const response = await fetch(`/api/mentors/${mentorId}`);
+        const token = localStorage.getItem('token'); // or sessionStorage.getItem('token')
+        const response = await fetch(`/api/mentor/${mentorId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
         const data = await response.json();
-
+        console.log('Fetched mentor profile data:', data);
         if (!data.success) {
             showMessage('Unable to fetch mentor details.', 'error');
             return;
@@ -738,14 +1052,14 @@ function toggleProfileMenu() {
     }
 }
 
-function closeConnectModal() {
-    const modal = document.getElementById('connectModal');
-    if (modal) modal.style.display = 'none';
+// function closeConnectModal() {
+//     const modal = document.getElementById('connectModal');
+//     if (modal) modal.style.display = 'none';
     
-    // currentMentorId = null;
-    const connectForm = document.getElementById('connectForm');
-    if (connectForm) connectForm.reset();
-}
+//     // currentMentorId = null;
+//     const connectForm = document.getElementById('connectForm');
+//     if (connectForm) connectForm.reset();
+// }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);

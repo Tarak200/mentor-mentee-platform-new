@@ -49,7 +49,6 @@ router.get('/mentees/:menteeId', authMiddleware.authenticateToken, requireMentor
     try {
         const mentorId = req.user.id;
         const { menteeId } = req.params;
-
         const mentee = await mentorService.getMenteeDetails(mentorId, menteeId);
         
         if (!mentee) {
@@ -62,6 +61,37 @@ router.get('/mentees/:menteeId', authMiddleware.authenticateToken, requireMentor
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// GET /api/mentor/:mentorId
+router.get('/:mentorId', authMiddleware.authenticateToken, async (req, res) => {
+  try {
+    const { mentorId } = req.params;
+    console.log("backend function called");
+
+    // You can fetch mentor details from DB using a service or model
+    const mentor = await mentorService.getMentorDetails(mentorId);
+
+    if (!mentor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mentor not found'
+      });
+    }
+
+    // Respond in a format expected by frontend
+    res.json({
+      success: true,
+      mentor
+    });
+  } catch (error) {
+    console.error('Error fetching mentor details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 
 // Get mentor's sessions
 router.get('/sessions', authMiddleware.authenticateToken, requireMentor, async (req, res) => {

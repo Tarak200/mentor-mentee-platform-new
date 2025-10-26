@@ -281,8 +281,8 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="preferredTime"><i class="fas fa-clock"></i> Preferred Time</label>
-                        <input type="text" id="preferredTime" placeholder="e.g., Weekends, Weekday Evenings, Flexible">
+                        <label for="preferredTime"><i class="fas fa-clock"></i> Preferred Date & Time</label>
+                        <input type="datetime-local" id="preferredTime" required>
                     </div>
                     
                     <div class="connection-note">
@@ -361,6 +361,9 @@
             </div>
         </div>
     </div>
+
+
+
 
     <div id="errorMessage" class="error-message" style="display: none;"></div>
     <div id="successMessage" class="success-message" style="display: none;"></div>

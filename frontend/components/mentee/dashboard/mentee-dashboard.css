@@ -1596,3 +1596,54 @@ body.mentee-body {
     opacity: 0;
     transform: translateY(-20px);
 }
+
+/* CRITICAL: Modal Display Fix */
+#connectModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none; /* Hidden by default */
+}
+
+#connectModal.show,
+#connectModal[style*="display: flex"] {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 2;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* BAD - This could prevent closing */
+.modal {
+    display: flex !important;
+}
+
+/* Or */
+.modal[style] {
+    display: flex !important;
+}
