@@ -89,7 +89,6 @@
                 </button>
             </div>
 
-            <!-- Search and Filter Section -->
             <!-- Mentor Search Section -->
             <section id="searchSection" class="search-section">
                 <div class="section-header">
@@ -154,7 +153,7 @@
                     </div>
                 </div>
                 
-                <!-- Your Existing Mentors Grid -->
+                <!-- Mentors Grid -->
                 <div class="mentors-section">
                     <div class="mentors-header">
                         <h3><i class="fas fa-chalkboard-teacher"></i> Available Mentors</h3>
@@ -168,6 +167,7 @@
                     </div>
                 </div>
             </section>
+
             <!-- My Sessions Section -->
             <section id="sessionsSection" class="sessions-section" style="display: none;">
                 <div class="section-header">
@@ -261,14 +261,14 @@
             <div class="modal-overlay" onclick="closeConnectModal()"></div>
             <div class="modal-content connect-modal">
                 <div class="modal-header">
-                    <h3><i class="fas fa-handshake"></i> Connect with Mentor</h3>
-                    <button onclick="closeConnectModal()" class="close-btn"><i class="fas fa-times"></i></button>
+                    <h3 id="connectModalTitle"><i class="fas fa-handshake"></i> Connect with Mentor</h3>
+                    <button type="button" onclick="closeConnectModal()" class="close-btn"><i class="fas fa-times"></i></button>
                 </div>
                 
-                <div class="mentor-preview" id="selectedMentorPreview">
-                    <!-- Mentor details will be populated here -->
-                </div>
+                <!-- Selected mentor preview -->
+                <div class="mentor-preview" id="selectedMentorPreview"></div>
                 
+                <!-- Connection request form -->
                 <form id="connectForm">
                     <div class="form-group">
                         <label for="subject"><i class="fas fa-book"></i> Subject</label>
@@ -277,7 +277,7 @@
                     
                     <div class="form-group">
                         <label for="message"><i class="fas fa-comment"></i> Message to Mentor</label>
-                        <textarea id="message" rows="4" placeholder="Tell the mentor about your learning goals, current level, and what you hope to achieve..."></textarea>
+                        <textarea id="message" rows="4" placeholder="Tell the mentor about your learning goals..." required></textarea>
                     </div>
                     
                     <div class="form-group">
@@ -299,6 +299,16 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+
+        <!-- Mentor Profile Modal -->
+        <div id="mentorProfileModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('mentorProfileModal')">&times;</span>
+                <h3>Mentor Profile</h3>
+                <div id="mentorProfileContent"></div>
             </div>
         </div>
 
@@ -358,602 +368,10 @@
     <!-- Security Script -->
     <script src="/components/mentee/dashboard/mentee-dashboard-security.js"></script>
 
-    <!-- functionality Script -->
+    <!-- Functionality Script -->
     <script src="/components/mentee/dashboard/mentee-dashboard.js"></script>
+    
     <!-- Socket.IO client -->
     <script src="/socket.io/socket.io.js"></script>
-    
-    <script>
-        let currentMentorId = null;
-        let allMentors = [];
-
-        // Check authentication
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            window.location.href = '/login';
-        }
-
-        // Load dashboard data
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadProfile();
-            await searchMentors();
-            await loadSessions();
-            await loadPlatformConfig();
-            setupRealtime();
-        });
-        
-        // Load platform configuration
-        async function loadPlatformConfig() {
-            try {
-                const response = await fetch('/api/platform-config');
-                if (response.ok) {
-                    const config = await response.json();
-                    document.getElementById('platformUpiId').textContent = config.upiId;
-                    
-                    // Update all UPI ID references in payment sections
-                    const upiElements = document.querySelectorAll('.platform-upi');
-                    upiElements.forEach(el => {
-                        el.textContent = config.upiId;
-                    });
-                    
-                    // Update commission percentage displays
-                    const commissionElements = document.querySelectorAll('.commission-percentage');
-                    commissionElements.forEach(el => {
-                        el.textContent = `${config.commissionPercentage}%`;
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading platform config:', error);
-            }
-        }
-
-        // Profile menu toggle
-        function toggleProfileMenu() {
-            const menu = document.getElementById('profileMenu');
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        }
-
-        // Close profile menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.profile-dropdown')) {
-                document.getElementById('profileMenu').style.display = 'none';
-            }
-        });
-
-        // Show sections
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Show selected section
-            document.getElementById(`${sectionName}Section`).style.display = 'block';
-        }
-
-        // Load profile
-        async function loadProfile() {
-            try {
-                const response = await fetch('/api/user/profile', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const user = await response.json();
-                    document.getElementById('userName').textContent = user.first_name;
-                    document.getElementById('userNameShort').textContent = user.first_name;
-                    
-                    if (user.profile_picture) {
-                        document.getElementById('profilePic').src = user.profile_picture;
-                        document.getElementById('profilePicLarge').src = user.profile_picture;
-                    }
-                    
-                    // Display profile details
-                    const profileDetails = `
-                        <div class="profile-grid">
-                            <div class="profile-item">
-                                <label>Full Name</label>
-                                <span>${user.first_name} ${user.last_name}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Email</label>
-                                <span>${user.email}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Age</label>
-                                <span>${user.age || 'Not specified'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Education</label>
-                                <span>${user.education || 'Not specified'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Institution</label>
-                                <span>${user.institution || 'Not specified'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Current Pursuit</label>
-                                <span>${user.current_pursuit || 'Not specified'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Languages</label>
-                                <span>${user.languages ? user.languages.join(', ') : 'Not specified'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Learning Interests</label>
-                                <span>${user.interests ? user.interests.join(', ') : 'Not specified'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Budget Range</label>
-                                <span>${user.budget_min ? `₹${user.budget_min}` : 'No min'} - ${user.budget_max ? `₹${user.budget_max}` : 'No max'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>Available Hours</label>
-                                <span>${user.available_hours ? user.available_hours.join(', ') : 'Not specified'}</span>
-                            </div>
-                            <div class="profile-item">
-                                <label>UPI ID</label>
-                                <span>${user.upi_id || 'Not set'}</span>
-                            </div>
-                        </div>
-                    `;
-                    document.getElementById('profileDetails').innerHTML = profileDetails;
-                }
-            } catch (error) {
-                console.error('Error loading profile:', error);
-            }
-        }
-
-        // Search mentors
-        async function searchMentors() {
-            const subject = document.getElementById('subjectSearch').value;
-            const minPrice = document.getElementById('minPrice').value;
-            const maxPrice = document.getElementById('maxPrice').value;
-            const gender = document.getElementById('genderFilter').value;
-            const language = document.getElementById('languageSearch').value;
-            
-            const params = new URLSearchParams();
-            if (subject) params.append('subject', subject);
-            if (minPrice) params.append('minPrice', minPrice);
-            if (maxPrice) params.append('maxPrice', maxPrice);
-            if (gender) params.append('gender', gender);
-            if (language) params.append('language', language);
-            
-            try {
-                const response = await fetch(`/api/mentee/find-mentors?${params.toString()}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    // Handle backend response format {success: true, data: []}
-                    allMentors = result.data || result || [];
-                    displayMentors(allMentors);
-                } else {
-                    showMessage('Error loading mentors', 'error');
-                }
-            } catch (error) {
-                console.error('Error searching mentors:', error);
-                showMessage('Error searching mentors', 'error');
-            }
-        }
-
-        // Display mentors
-        function displayMentors(mentors) {
-            const mentorsGrid = document.getElementById('mentorsGrid');
-            const mentorCount = document.getElementById('mentorCount');
-            
-            mentorCount.textContent = `${mentors.length} mentors found`;
-            
-            if (mentors.length === 0) {
-                mentorsGrid.innerHTML = `
-                    <div class="no-mentors">
-                        <i class="fas fa-search"></i>
-                        <h3>No mentors found</h3>
-                        <p>Try adjusting your search criteria</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const mentorsHtml = mentors.map(mentor => `
-                <div class="mentor-card enhanced">
-                    <div class="mentor-header">
-                        <img src="${mentor.profile_picture || '/uploads/default-avatar.png'}" alt="${mentor.first_name}">
-                        <div class="mentor-basic">
-                            <h3>${mentor.first_name} ${mentor.last_name}</h3>
-                            <div class="mentor-rating">
-                                <span class="rating-stars">${'★'.repeat(Math.floor(mentor.rating || 4))}${'☆'.repeat(5-Math.floor(mentor.rating || 4))}</span>
-                                <span class="rating-text">${mentor.rating || '4.0'} (${mentor.total_sessions || 0} sessions)</span>
-                            </div>
-                        </div>
-                        <div class="mentor-price">
-                            <span class="price">₹${mentor.hourly_rate}</span>
-                            <span class="price-unit">/hour</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mentor-details">
-                        <div class="detail-row">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span>${mentor.education} from ${mentor.institution}</span>
-                        </div>
-                        <div class="detail-row">
-                            <i class="fas fa-briefcase"></i>
-                            <span>${mentor.current_pursuit}</span>
-                        </div>
-                        <div class="detail-row">
-                            <i class="fas fa-language"></i>
-                            <span>${mentor.languages ? mentor.languages.join(', ') : 'Not specified'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mentor-subjects">
-                        <h4><i class="fas fa-book"></i> Subjects:</h4>
-                        <div class="subject-tags">
-                            ${mentor.subjects ? mentor.subjects.map(subject => `<span class="subject-tag">${subject}</span>`).join('') : '<span class="no-subjects">Not specified</span>'}
-                        </div>
-                    </div>
-                    
-                    <div class="mentor-availability">
-                        <h4><i class="fas fa-clock"></i> Available:</h4>
-                        <div class="availability-tags">
-                            ${mentor.available_hours ? mentor.available_hours.map(hour => `<span class="availability-tag">${hour}</span>`).join('') : '<span class="no-availability">Not specified</span>'}
-                        </div>
-                    </div>
-                    
-                    ${mentor.qualifications ? `
-                        <div class="mentor-qualifications">
-                            <h4><i class="fas fa-certificate"></i> Qualifications:</h4>
-                            <p>${mentor.qualifications}</p>
-                        </div>
-                    ` : ''}
-                    
-                    <div class="mentor-actions">
-                        <button onclick="connectWithMentor(${mentor.id}, '${mentor.first_name} ${mentor.last_name}')" class="btn btn-connect">
-                            <i class="fas fa-handshake"></i> Connect Now
-                        </button>
-                        <button onclick="viewMentorProfile(${mentor.id})" class="btn btn-view">
-                            <i class="fas fa-eye"></i> View Profile
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-            
-            mentorsGrid.innerHTML = mentorsHtml;
-        }
-
-        // Connect with mentor
-        function connectWithMentor(mentorId, mentorName) {
-            currentMentorId = mentorId;
-            
-            // Show mentor preview in modal
-            const mentor = allMentors.find(m => m.id === mentorId);
-            document.getElementById('selectedMentorPreview').innerHTML = `
-                <div class="mentor-preview-card">
-                    <img src="${mentor.profile_picture || '/uploads/default-avatar.png'}" alt="${mentorName}">
-                    <div>
-                        <h4>${mentorName}</h4>
-                        <p>₹${mentor.hourly_rate}/hour</p>
-                        <span class="rating">${'★'.repeat(Math.floor(mentor.rating || 4))} ${mentor.rating || '4.0'}</span>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('connectModal').style.display = 'flex';
-        }
-
-        // Close connect modal
-        function closeConnectModal() {
-            document.getElementById('connectModal').style.display = 'none';
-            currentMentorId = null;
-            document.getElementById('connectForm').reset();
-        }
-
-        // Handle connect form submission
-        document.getElementById('connectForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const subject = document.getElementById('subject').value;
-            const message = document.getElementById('message').value;
-            const preferredTime = document.getElementById('preferredTime').value;
-            
-            try {
-                const response = await fetch('/api/mentee/request', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        mentorId: currentMentorId,
-                        goals: subject, // Backend expects 'goals' not 'subject'
-                        message: message,
-                        preferredSchedule: preferredTime // Backend expects 'preferredSchedule' not 'preferredTime'
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    // Show success popup modal
-                    showSuccessPopup('Connection request sent successfully! 🎉\n\nThe mentor will review your request and respond soon.');
-                    closeConnectModal();
-                } else {
-                    showMessage(result.message || 'Error sending request', 'error');
-                }
-            } catch (error) {
-                console.error('Connection request error:', error);
-                showMessage('An error occurred while sending the request', 'error');
-            }
-        });
-
-        // Load sessions
-        async function loadSessions() {
-            try {
-                const response = await fetch('/api/mentee/sessions', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const sessions = await response.json();
-                    document.getElementById('upcomingSessions').textContent = sessions.length;
-                    
-                    const sessionsHtml = sessions.length > 0 ?
-                        sessions.map(session => `
-                            <div class="session-card mentee-session">
-                                <div class="session-header">
-                                    <div class="session-mentor">
-                                        <h4><i class="fas fa-chalkboard-teacher"></i> ${session.mentor_first_name} ${session.mentor_last_name}</h4>
-                                        <span class="session-subject">${session.subject}</span>
-                                    </div>
-                                    <div class="session-status ${session.payment_status}">
-                                        ${session.payment_status === 'paid' ? '✅ Paid' : '⚠️ Payment Pending'}
-                                    </div>
-                                </div>
-                                
-                                <div class="session-details">
-                                    <div class="session-info">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>${new Date(session.scheduled_time).toLocaleDateString()}</span>
-                                    </div>
-                                    <div class="session-info">
-                                        <i class="fas fa-clock"></i>
-                                        <span>${new Date(session.scheduled_time).toLocaleTimeString()}</span>
-                                    </div>
-                                    <div class="session-info">
-                                        <i class="fas fa-rupee-sign"></i>
-                                        <span>₹${session.amount}</span>
-                                    </div>
-                                </div>
-                                
-                                ${session.meeting_link ? `
-                                    <div class="session-link">
-                                        <a href="${session.meeting_link}" target="_blank" class="btn btn-join">
-                                            <i class="fas fa-video"></i> Join Meeting
-                                        </a>
-                                    </div>
-                                ` : ''}
-                                
-                                ${session.payment_status === 'pending' ? `
-                                    <div class="payment-required">
-                                        <i class="fas fa-exclamation-circle"></i>
-                                        <strong>Payment Required:</strong> Pay ₹${session.amount} to <code class="platform-upi">platform@upi</code> to confirm this session.
-                                        <button onclick="copyUpiId()" class="btn btn-copy-upi">
-                                            <i class="fas fa-copy"></i> Copy UPI ID
-                                        </button>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `).join('') :
-                        '<div class="no-sessions"><i class="fas fa-calendar-times"></i><h3>No sessions scheduled</h3><p>Connect with mentors to start learning!</p></div>';
-                    
-                    document.getElementById('sessionsList').innerHTML = sessionsHtml;
-                }
-            } catch (error) {
-                console.error('Error loading sessions:', error);
-            }
-        }
-
-        // Clear filters
-        function clearFilters() {
-            document.getElementById('subjectSearch').value = '';
-            document.getElementById('minPrice').value = '';
-            document.getElementById('maxPrice').value = '';
-            document.getElementById('genderFilter').value = '';
-            document.getElementById('languageSearch').value = '';
-            searchMentors();
-        }
-
-        // Copy UPI ID
-        function copyUpiId() {
-            const upiId = document.getElementById('platformUpiId').textContent;
-            navigator.clipboard.writeText(upiId).then(() => {
-                showMessage('UPI ID copied to clipboard! 📋', 'success');
-            });
-        }
-
-        // Show customer care
-        function showCustomerCare() {
-            document.getElementById('customerCareModal').style.display = 'flex';
-        }
-
-        // Close customer care
-        function closeCustomerCare() {
-            document.getElementById('customerCareModal').style.display = 'none';
-        }
-
-        // Upload profile picture
-        document.getElementById('profilePicUpload').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('profilePic', file);
-            
-            try {
-                const response = await fetch('/api/upload-profile-pic', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showMessage('Profile picture updated! 📸', 'success');
-                    document.getElementById('profilePic').src = result.profilePicture;
-                    document.getElementById('profilePicLarge').src = result.profilePicture;
-                } else {
-                    showMessage(result.message || 'Error uploading file', 'error');
-                }
-            } catch (error) {
-                showMessage('An error occurred', 'error');
-            }
-        });
-
-        // Logout
-        function logout() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('user');
-            window.location.href = '/';
-        }
-
-        // Realtime setup
-        function setupRealtime() {
-            try {
-                const socket = io({
-                    auth: { token }
-                });
-                socket.on('connect', () => {
-                    // connected
-                });
-                socket.on('request:decision', (payload) => {
-                    if (payload.status === 'accepted') {
-                        showMessage('Your connection request was accepted! 🎉', 'success');
-                    } else if (payload.status === 'declined') {
-                        showMessage('Your connection request was declined.', 'error');
-                    }
-                });
-                socket.on('meeting:start', (payload) => {
-                    showMeetingMiniWindow(payload);
-                });
-                socket.on('meeting:message', (msg) => {
-                    appendMeetingMessage(msg, 'incoming');
-                });
-            } catch (e) {
-                console.warn('Realtime not available:', e.message);
-            }
-        }
-
-        // Mini meeting window + chat
-        let meetingWindow = null;
-        let meetingPeerId = null;
-        let meetingSocket = null;
-
-        function showMeetingMiniWindow(payload) {
-            meetingPeerId = (localStorage.getItem('userId') == payload.mentorId) ? payload.menteeId : payload.mentorId;
-            meetingSocket = io({ auth: { token } });
-
-            if (meetingWindow) {
-                document.body.removeChild(meetingWindow);
-            }
-            meetingWindow = document.createElement('div');
-            meetingWindow.style.cssText = 'position:fixed; bottom:20px; right:20px; width:360px; background:#fff; box-shadow:0 8px 25px rgba(0,0,0,0.15); border-radius:10px; z-index:2000; display:flex; flex-direction:column;';
-            meetingWindow.innerHTML = `
-                <div style=\"padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;\">
-                    <div><strong>Meeting Started</strong><div style=\"font-size:12px;color:#666;\">${new Date(payload.scheduledAt).toLocaleString()}</div></div>
-                    <button class=\"close-mini\" style=\"border:none;background:transparent;font-size:18px;cursor:pointer\">&times;</button>
-                </div>
-                <div style=\"padding:10px;\">
-                    <div style=\"margin-bottom:8px; font-size:14px;\">Meet link:</div>
-                    <div style=\"display:flex; gap:6px; align-items:center; margin-bottom:10px;\">
-                        <a href=\"${payload.meetLink}\" target=\"_blank\" style=\"flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;\">${payload.meetLink}</a>
-                        <button class=\"send-link\" style=\"padding:6px 8px;\">Send</button>
-                    </div>
-                    <div class=\"chat\" style=\"height:140px; overflow:auto; border:1px solid #eee; border-radius:6px; padding:6px; margin-bottom:8px;\"></div>
-                    <div style=\"display:flex; gap:6px;\">
-                        <input type=\"text\" class=\"chat-input\" placeholder=\"Type a message\" style=\"flex:1; padding:6px; border:1px solid #ddd; border-radius:6px;\">
-                        <button class=\"chat-send\" style=\"padding:6px 10px;\">Send</button>
-                    </div>
-                </div>`;
-
-            meetingWindow.querySelector('.close-mini').addEventListener('click', () => {
-                document.body.removeChild(meetingWindow); meetingWindow = null;
-            });
-            meetingWindow.querySelector('.send-link').addEventListener('click', () => {
-                if (!meetingSocket) return;
-                meetingSocket.emit('meeting:message', { toUserId: meetingPeerId, text: 'Join via this link', link: payload.meetLink });
-                appendMeetingMessage({ text: 'Link sent', link: payload.meetLink, fromUserId: localStorage.getItem('userId') }, 'outgoing');
-            });
-            meetingWindow.querySelector('.chat-send').addEventListener('click', () => {
-                const input = meetingWindow.querySelector('.chat-input');
-                const text = input.value.trim();
-                if (!text) return;
-                input.value='';
-                if (!meetingSocket) return;
-                meetingSocket.emit('meeting:message', { toUserId: meetingPeerId, text });
-                appendMeetingMessage({ text, fromUserId: localStorage.getItem('userId') }, 'outgoing');
-            });
-
-            document.body.appendChild(meetingWindow);
-        }
-
-        function appendMeetingMessage(msg, direction) {
-            if (!meetingWindow) return;
-            const chat = meetingWindow.querySelector('.chat');
-            const div = document.createElement('div');
-            div.style.margin = '6px 0';
-            if (direction === 'outgoing') {
-                div.style.textAlign = 'right';
-            }
-            div.innerHTML = `${msg.text ? msg.text : ''} ${msg.link ? `<a href=\"${msg.link}\" target=\"_blank\">${msg.link}</a>` : ''}`;
-            chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
-        }
-
-        // Show message
-        function showMessage(message, type) {
-            const messageEl = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
-            messageEl.textContent = message;
-            messageEl.style.display = 'block';
-            
-            setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, 5000);
-        }
-
-        // Show success popup modal
-        function showSuccessPopup(message) {
-            const popup = document.getElementById('successPopup');
-            const messageEl = document.getElementById('successPopupMessage');
-            
-            if (popup && messageEl) {
-                messageEl.innerHTML = message.replace(/\n/g, '<br>');
-                popup.style.display = 'flex';
-                
-                // Auto close after 5 seconds
-                setTimeout(() => {
-                    closeSuccessPopup();
-                }, 5000);
-            }
-        }
-
-        // Close success popup
-        function closeSuccessPopup() {
-            const popup = document.getElementById('successPopup');
-            if (popup) {
-                popup.style.display = 'none';
-            }
-        }
-    </script>
 </body>
 </html>

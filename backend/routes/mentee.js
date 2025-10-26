@@ -121,6 +121,8 @@ router.post('/request', async (req, res) => {
     const payload = { ...req.body, menteeId };
     const data = await menteeService.requestMentoring(payload);
 
+    console.log('Request saved:', data); // log saved data
+
     // Emit realtime event to the mentor
     try {
       const io = req.app.get('io');
@@ -139,7 +141,7 @@ router.post('/request', async (req, res) => {
           },
           subject: req.body.subject || null,
           message: req.body.message || null,
-          preferredTime: req.body.preferredTime || req.body.preferredSchedule || null,
+          preferredTime: req.body.preferredTime || null,
           createdAt: new Date().toISOString(),
         };
         const { notifyUser } = require('../realtime');
