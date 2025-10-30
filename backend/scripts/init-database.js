@@ -7,20 +7,9 @@ console.log('🗄️  MENTOR-MENTEE PLATFORM - DATABASE INITIALIZATION\n');
 
 async function initializeDatabase() {
     try {
-        // Check if we're in the right directory
-        const backendPath = path.join(process.cwd(), 'backend');
-        if (!fs.existsSync(backendPath)) {
-            console.error('❌ Error: Please run this script from the project root directory');
-            console.log('💡 Current directory:', process.cwd());
-            console.log('💡 Expected: C:\\Users\\suren\\mentor-mentee-platform');
-            process.exit(1);
-        }
-
-        console.log('📍 Project directory verified');
-        
         // Import and run the seeder
         console.log('📦 Loading database seeder...');
-        const SeedData = require('./backend/scripts/seedData');
+        const SeedData = require('./seedData');
         const seeder = new SeedData();
         
         console.log('🔄 Starting database initialization and seeding...\n');
@@ -43,26 +32,29 @@ async function initializeDatabase() {
             console.log('👨‍🎓 Mentee: alex.thompson@email.com / password123');
             
             console.log('\n📍 Database Location:');
-            const dbPath = path.join(__dirname, 'backend', 'data', 'mentorship.db');
+            const dbPath = path.join(__dirname, '..', 'data', 'mentorship.db');
             console.log(`   ${dbPath}`);
             
             console.log('\n🚀 Next Steps:');
             console.log('1. Install SQLite VS Code extension (if not installed)');
             console.log('2. Open VS Code in this project directory');
             console.log('3. Use Ctrl+Shift+P → "SQLite: Open Database"');
-            console.log(`4. Navigate to: backend/data/mentorship.db`);
+            console.log('4. Navigate to: backend/data/mentorship.db');
             console.log('5. Start your server: npm start');
             
         } else {
             console.log('❌ Database initialization failed');
         }
         
+        process.exit(0);
+        
     } catch (error) {
         console.error('❌ Database initialization error:', error.message);
         console.log('\n🔧 Troubleshooting:');
-        console.log('1. Make sure you\'re in the project root directory');
+        console.log('1. Make sure you\'re in the backend/scripts directory');
         console.log('2. Run: npm install (to ensure dependencies are installed)');
         console.log('3. Check if backend/services/database.js exists');
+        console.log('4. Check if backend/scripts/seedData.js exists');
         process.exit(1);
     }
 }

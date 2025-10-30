@@ -23,12 +23,20 @@ class SeedData {
                 role: 'mentor',
                 bio: 'Senior Software Engineer with 8+ years experience in full-stack development. Passionate about mentoring and helping others grow.',
                 skills: 'JavaScript,React,Node.js,Python,AWS',
-                avatar: '/uploads/avatars/sarah.jpg',
+                avatar: './uploads/avatars/sarah.jpg',
                 hourlyRate: 75,
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0101',
-                timezone: 'America/New_York'
+                timezone: 'America/New_York',
+                education: 'Master of Science in Computer Science',
+                institution: 'Stanford University',
+                current_pursuit: 'Senior Software Engineer at Tech Corp',
+                languages: 'English,Spanish',
+                subjects: 'Web Development,Full Stack,JavaScript,React,Node.js',
+                qualifications: 'AWS Certified Solutions Architect, Google Cloud Professional',
+                profile_picture: '/uploads/profiles/sarah-profile.jpg',
+                upi_id: 'sarah.johnson@upi'
             },
             {
                 id: 'mentor_2',
@@ -44,7 +52,15 @@ class SeedData {
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0102',
-                timezone: 'America/Los_Angeles'
+                timezone: 'America/Los_Angeles',
+                education: 'MBA - Business Administration',
+                institution: 'Harvard Business School',
+                current_pursuit: 'VP of Product at StartupXYZ',
+                languages: 'English,Mandarin',
+                subjects: 'Product Management,Business Strategy,Startup Growth,Analytics',
+                qualifications: 'Certified Product Manager (CPM), Agile Certified Practitioner',
+                profile_picture: './uploads/profiles/michael-profile.jpg',
+                upi_id: 'michael.chen@upi'
             },
             {
                 id: 'mentor_3',
@@ -60,7 +76,15 @@ class SeedData {
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0103',
-                timezone: 'America/Chicago'
+                timezone: 'America/Chicago',
+                education: 'Bachelor of Fine Arts in Graphic Design',
+                institution: 'Rhode Island School of Design',
+                current_pursuit: 'Lead UX Designer at Design Studio',
+                languages: 'English,French',
+                subjects: 'UX/UI Design,User Research,Prototyping,Design Systems',
+                qualifications: 'Adobe Certified Expert, Nielsen Norman Group UX Certification',
+                profile_picture: '/uploads/profiles/emma-profile.jpg',
+                upi_id: 'emma.williams@upi'
             },
             {
                 id: 'mentor_4',
@@ -76,7 +100,15 @@ class SeedData {
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0104',
-                timezone: 'America/Denver'
+                timezone: 'America/Denver',
+                education: 'PhD in Data Science',
+                institution: 'MIT',
+                current_pursuit: 'Senior Data Scientist at AI Research Lab',
+                languages: 'English,Spanish,Portuguese',
+                subjects: 'Machine Learning,Data Science,Python,AI,Statistics',
+                qualifications: 'TensorFlow Developer Certificate, AWS Machine Learning Specialty',
+                profile_picture: '/uploads/profiles/david-profile.jpg',
+                upi_id: 'david.rodriguez@upi'
             }
         ];
 
@@ -96,7 +128,15 @@ class SeedData {
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0201',
-                timezone: 'America/New_York'
+                timezone: 'America/New_York',
+                education: 'Bachelor of Science in Computer Science (In Progress)',
+                institution: 'University of California, Berkeley',
+                current_pursuit: 'CS Student - Junior Year',
+                languages: 'English',
+                subjects: 'Web Development,Programming,Software Engineering',
+                qualifications: 'None',
+                profile_picture: '/uploads/profiles/alex-profile.jpg',
+                upi_id: null
             },
             {
                 id: 'mentee_2',
@@ -112,7 +152,15 @@ class SeedData {
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0202',
-                timezone: 'America/Los_Angeles'
+                timezone: 'America/Los_Angeles',
+                education: 'Bachelor of Arts in Marketing',
+                institution: 'New York University',
+                current_pursuit: 'Marketing Manager transitioning to PM',
+                languages: 'English,Spanish',
+                subjects: 'Product Management,Marketing,Business Strategy',
+                qualifications: 'Google Analytics Certified',
+                profile_picture: '/uploads/profiles/jessica-profile.jpg',
+                upi_id: null
             },
             {
                 id: 'mentee_3',
@@ -128,7 +176,15 @@ class SeedData {
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0203',
-                timezone: 'America/Chicago'
+                timezone: 'America/Chicago',
+                education: 'Bachelor of Arts in Graphic Design',
+                institution: 'Art Institute of Chicago',
+                current_pursuit: 'Freelance Designer seeking full-time UX role',
+                languages: 'English,Korean',
+                subjects: 'UX/UI Design,Graphic Design,Portfolio Development',
+                qualifications: 'Adobe Photoshop Certified',
+                profile_picture: '/uploads/profiles/ryan-profile.jpg',
+                upi_id: null
             },
             {
                 id: 'mentee_4',
@@ -139,12 +195,20 @@ class SeedData {
                 role: 'mentee',
                 bio: 'Mathematics graduate interested in data science and machine learning. Looking for hands-on guidance and project experience.',
                 skills: 'Mathematics,Statistics,R,Excel,Learning',
-                avatar: '/uploads/avatars/sophia.jpg',
+                avatar: './uploads/avatars/sophia.jpg',
                 hourlyRate: 0,
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0204',
-                timezone: 'America/Denver'
+                timezone: 'America/Denver',
+                education: 'Bachelor of Science in Mathematics',
+                institution: 'University of Colorado Boulder',
+                current_pursuit: 'Data Analyst seeking ML career transition',
+                languages: 'English,Spanish',
+                subjects: 'Data Science,Machine Learning,Statistics,Python',
+                qualifications: 'Microsoft Excel Expert Certified',
+                profile_picture: '/uploads/profiles/sophia-profile.jpg',
+                upi_id: null
             },
             {
                 id: 'mentee_5',
@@ -160,7 +224,15 @@ class SeedData {
                 isActive: 1,
                 emailVerified: 1,
                 phone: '+1-555-0205',
-                timezone: 'America/New_York'
+                timezone: 'America/New_York',
+                education: 'High School Diploma, Self-taught Programming',
+                institution: 'Online Learning Platforms (freeCodeCamp, Udemy)',
+                current_pursuit: 'Junior Developer Job Seeker',
+                languages: 'English',
+                subjects: 'Web Development,JavaScript,Frontend Development',
+                qualifications: 'freeCodeCamp Responsive Web Design Certificate',
+                profile_picture: '/uploads/profiles/james-profile.jpg',
+                upi_id: null
             }
         ];
 
@@ -179,21 +251,30 @@ class SeedData {
             isActive: 1,
             emailVerified: 1,
             phone: '+1-555-0001',
-            timezone: 'America/New_York'
+            timezone: 'America/New_York',
+            education: 'Master of Business Administration',
+            institution: 'Administrative University',
+            current_pursuit: 'Platform Administrator',
+            languages: 'English',
+            subjects: 'Platform Management,Administration',
+            qualifications: 'Certified Platform Administrator',
+            profile_picture: '/uploads/profiles/admin-profile.jpg',
+            upi_id: 'admin@upi'
         };
 
         this.users = [...mentors, ...mentees, admin];
         
-        // Add timestamps
+        // Add timestamps and settings
         const now = new Date().toISOString();
         this.users.forEach(user => {
-            user.createdAt = now;
-            user.updatedAt = now;
+            user.created_at = now;
+            user.updated_at = now;
             user.settings = JSON.stringify({
                 emailNotifications: true,
                 pushNotifications: true,
                 theme: 'light'
             });
+            user.lastLogin = null;
         });
 
         return this.users;
@@ -279,6 +360,8 @@ class SeedData {
                 actualEndTime: new Date(lastWeek.getTime() + 60 * 60 * 1000).toISOString(),
                 notes: 'Great session! Alex showed good understanding of components.',
                 summary: 'Covered React components, props, and basic state management',
+                cancellationReason: null,
+                rescheduleReason: null,
                 paymentStatus: 'paid',
                 createdAt,
                 updatedAt: createdAt
@@ -297,6 +380,8 @@ class SeedData {
                 actualEndTime: new Date(lastWeek.getTime() + 90 * 60 * 1000).toISOString(),
                 notes: 'Excellent progress on understanding market research',
                 summary: 'Reviewed competitive analysis and product positioning',
+                cancellationReason: null,
+                rescheduleReason: null,
                 paymentStatus: 'paid',
                 createdAt,
                 updatedAt: createdAt
@@ -312,6 +397,12 @@ class SeedData {
                 duration: 60,
                 amount: 65,
                 status: 'upcoming',
+                actualStartTime: null,
+                actualEndTime: null,
+                notes: null,
+                summary: null,
+                cancellationReason: null,
+                rescheduleReason: null,
                 paymentStatus: 'pending',
                 createdAt,
                 updatedAt: createdAt
@@ -326,6 +417,12 @@ class SeedData {
                 duration: 120,
                 amount: 170,
                 status: 'upcoming',
+                actualStartTime: null,
+                actualEndTime: null,
+                notes: null,
+                summary: null,
+                cancellationReason: null,
+                rescheduleReason: null,
                 paymentStatus: 'pending',
                 createdAt,
                 updatedAt: createdAt
@@ -340,6 +437,12 @@ class SeedData {
                 duration: 60,
                 amount: 75,
                 status: 'upcoming',
+                actualStartTime: null,
+                actualEndTime: null,
+                notes: null,
+                summary: null,
+                cancellationReason: null,
+                rescheduleReason: null,
                 paymentStatus: 'pending',
                 createdAt,
                 updatedAt: createdAt
@@ -522,13 +625,17 @@ class SeedData {
                     `INSERT INTO users (
                         id, firstName, lastName, email, password, role, bio, skills, 
                         avatar, hourlyRate, isActive, emailVerified, phone, timezone, 
-                        settings, createdAt, updatedAt
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        settings, lastLogin, created_at, updated_at,
+                        education, institution, current_pursuit, languages, subjects,
+                        qualifications, profile_picture, upi_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         user.id, user.firstName, user.lastName, user.email, user.password,
                         user.role, user.bio, user.skills, user.avatar, user.hourlyRate,
                         user.isActive, user.emailVerified, user.phone, user.timezone,
-                        user.settings, user.createdAt, user.updatedAt
+                        user.settings, user.lastLogin, user.created_at, user.updated_at,
+                        user.education, user.institution, user.current_pursuit, user.languages,
+                        user.subjects, user.qualifications, user.profile_picture, user.upi_id
                     ]
                 );
             }
@@ -550,13 +657,14 @@ class SeedData {
                     `INSERT INTO mentoring_sessions (
                         id, mentorId, menteeId, title, description, scheduledAt, duration, 
                         amount, status, actualStartTime, actualEndTime, notes, summary, 
-                        paymentStatus, createdAt, updatedAt
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        cancellationReason, rescheduleReason, paymentStatus, createdAt, updatedAt
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         session.id, session.mentorId, session.menteeId, session.title,
                         session.description, session.scheduledAt, session.duration, session.amount,
                         session.status, session.actualStartTime, session.actualEndTime,
-                        session.notes, session.summary, session.paymentStatus,
+                        session.notes, session.summary, session.cancellationReason,
+                        session.rescheduleReason, session.paymentStatus,
                         session.createdAt, session.updatedAt
                     ]
                 );
@@ -642,11 +750,6 @@ class SeedData {
         for (const table of tables) {
             await db.run(`DELETE FROM ${table}`);
         }
-    }
-
-    // Get database statistics
-    async getStats() {
-        return await db.getStats();
     }
 }
 

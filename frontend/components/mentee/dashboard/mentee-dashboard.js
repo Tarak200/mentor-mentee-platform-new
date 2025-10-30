@@ -894,49 +894,135 @@ async function handleConnectFormSubmit(formElement) {
     closeConnectModal();
 }
 
-
+// ========================================
+// VIEW MENTOR PROFILE 
+// ========================================
 async function viewMentorProfile(mentorId) {
-    try {
-        const token = localStorage.getItem('token'); // or sessionStorage.getItem('token')
-        const response = await fetch(`/api/mentor/${mentorId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        const data = await response.json();
-        console.log('Fetched mentor profile data:', data);
-        if (!data.success) {
-            showMessage('Unable to fetch mentor details.', 'error');
-            return;
-        }
+  if (!mentorId) {
+    console.warn('viewMentorProfile called without mentorId');
+    alert('Mentor ID is missing. Please try again.');
+    return;
+  }
 
-        const mentor = data.mentor;
-        console.log('Mentor data:', mentor);
-        const modal = document.getElementById('mentorProfileModal');
-        const content = document.getElementById('mentorProfileContent');
+  const modal = document.getElementById('mentorProfileModal');
+  const content = document.getElementById('mentorProfileContent');
 
-        if (content) {
-            content.innerHTML = `
-                <div class="mentor-profile">
-                    <img src="${mentor.profile_picture || '/uploads/default-avatar.png'}" alt="${mentor.first_name}">
-                    <h2>${mentor.first_name} ${mentor.last_name}</h2>
-                    <p><i class="fas fa-graduation-cap"></i> ${mentor.education} from ${mentor.institution}</p>
-                    <p><i class="fas fa-briefcase"></i> ${mentor.current_pursuit}</p>
-                    <p><i class="fas fa-language"></i> ${mentor.languages.join(', ')}</p>
-                    <p><i class="fas fa-book"></i> Subjects: ${mentor.subjects.join(', ')}</p>
-                    <p><i class="fas fa-certificate"></i> ${mentor.qualifications}</p>
-                    <p><i class="fas fa-info-circle"></i> Bio: ${mentor.bio || 'No bio available'}</p>
-                </div>
-            `;
-        }
+  // Show loading placeholder
+  if (content) {
+    content.innerHTML = `
+      <div style="text-align:center; padding: 30px;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: #007bff;"></i>
+        <p style="margin-top:10px; font-size: 15px; color:#444;">Loading mentor profile...</p>
+      </div>`;
+  }
 
-        if (modal) modal.style.display = 'flex';
-    } catch (error) {
-        console.error('Error fetching mentor profile:', error);
-        showMessage('Something went wrong while loading the profile.', 'error');
+  try {
+    const token = localStorage.getItem('authToken') || '';
+    const response = await fetch(`/api/mentor/${encodeURIComponent(mentorId)}`, {
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Non-OK response
+    if (!response.ok) {
+      console.error('Fetch failed:', response.status, response.statusText);
+      const text = await response.text().catch(() => null);
+      const message = text || `Server returned ${response.status}`;
+      if (content) content.innerHTML = `<p style="color:#d9534f;">Unable to load profile. ${message}</p>`;
+      if (modal) modal.classList.add('show');
+      return;
     }
+
+    const data = await response.json().catch(() => null);
+    console.log('Fetched mentor profile data:', data);
+
+    if (!data || !data.success || !data.mentor) {
+      const reason = data && data.message ? data.message : 'No mentor data returned.';
+      if (content) content.innerHTML = `<p style="color:#d9534f;">Unable to fetch mentor details. ${reason}</p>`;
+      if (modal) modal.classList.add('show');
+      return;
+    }
+
+    const mentor = data.mentor;
+
+    // ---- BUILD UI ----
+    const profileHTML = `
+      <div class="mentor-profile">
+        <img src="${mentor.profile_picture || '/uploads/default-avatar.png'}" 
+             alt="${mentor.first_name || ''} ${mentor.last_name || ''}">
+        <h2>${mentor.first_name || ''} ${mentor.last_name || ''}</h2>
+
+        <p><i class="fas fa-graduation-cap"></i>
+          ${mentor.education || 'N/A'} 
+          ${mentor.institution ? `from ${mentor.institution}` : ''}
+        </p>
+
+        <p><i class="fas fa-briefcase"></i> ${mentor.current_pursuit || 'N/A'}</p>
+
+        <p><i class="fas fa-language"></i> ${Array.isArray(mentor.languages) ? mentor.languages.join(', ') : (mentor.languages || 'N/A')}</p>
+
+        <p><i class="fas fa-book"></i> <strong>Subjects:</strong> 
+          ${Array.isArray(mentor.subjects) ? mentor.subjects.join(', ') : (mentor.subjects || 'N/A')}
+        </p>
+
+        <p><i class="fas fa-certificate"></i> <strong>${mentor.qualifications || 'N/A'}</strong></p>
+
+        <p><i class="fas fa-info-circle"></i> <strong>Bio:</strong> 
+          ${mentor.bio || 'No bio available'}
+        </p>
+      </div>
+    `;
+
+    if (content) content.innerHTML = profileHTML;
+
+    // ---- SHOW MODAL ----
+    if (modal) {
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+  } catch (error) {
+    console.error('Error fetching mentor profile:', error);
+    if (content)
+      content.innerHTML = `<p style="color:#d9534f;">Something went wrong while loading the profile.</p>`;
+    if (modal) modal.classList.add('show');
+  }
 }
+
+
+function closeMentorModal() {
+  const modal = document.getElementById('mentorProfileModal');
+  if (modal) {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+  }
+}
+
+// click outside to close -- use event listener instead of overriding window.onclick
+window.addEventListener('click', function(event) {
+  const modal = document.getElementById('mentorProfileModal');
+  if (!modal) return;
+  // if click target is the overlay (modal itself) then hide
+  if (event.target === modal) {
+    closeMentorModal();
+  }
+});
+
+// Close button wiring (for cases where close button is generated dynamically)
+document.addEventListener('DOMContentLoaded', function() {
+  const closeBtn = document.getElementById('closeMentorBtn');
+  if (closeBtn) closeBtn.addEventListener('click', closeMentorModal);
+
+  // delegate clicks from any .view-mentor-btn
+  document.body.addEventListener('click', function(e) {
+    const btn = e.target.closest && e.target.closest('.view-mentor-btn');
+    if (btn) {
+      const id = btn.getAttribute('data-mentor-id');
+      viewMentorProfile(id);
+    }
+  });
+});
 
 // ========================================
 // SESSIONS MANAGEMENT

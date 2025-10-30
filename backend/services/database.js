@@ -62,8 +62,16 @@ class DatabaseService {
                 timezone TEXT DEFAULT 'UTC',
                 settings TEXT DEFAULT '{}',
                 lastLogin TEXT,
-                createdAt TEXT NOT NULL,
-                updatedAt TEXT NOT NULL
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                education TEXT,
+                institution TEXT,
+                current_pursuit TEXT,
+                languages TEXT,
+                subjects TEXT,
+                qualifications TEXT,
+                profile_picture TEXT,
+                upi_id TEXT                
             )`,
 
             // Mentoring sessions table

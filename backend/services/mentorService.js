@@ -1,6 +1,4 @@
-// const db = require('./database');
-const db = require('../legacy-files/database');
-
+const db = require('./database');
 
 class MentorService {
     // Get dashboard statistics for mentor

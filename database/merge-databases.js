@@ -13,6 +13,7 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const targetDbService = require('../backend/services/database');
 
+console.log("merge-databases.js file is called")
 const SOURCES = [
   path.join(__dirname, '..', 'db', 'platform.db'),
   path.join(__dirname, '..', 'legacy-files', 'database', 'platform.db'),
