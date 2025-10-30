@@ -23,7 +23,7 @@ class SeedData {
                 role: 'mentor',
                 bio: 'Senior Software Engineer with 8+ years experience in full-stack development. Passionate about mentoring and helping others grow.',
                 skills: 'JavaScript,React,Node.js,Python,AWS',
-                avatar: './uploads/avatars/sarah.jpg',
+                avatar: '../uploads/sarah.jpg',
                 hourlyRate: 75,
                 isActive: 1,
                 emailVerified: 1,
@@ -35,7 +35,7 @@ class SeedData {
                 languages: 'English,Spanish',
                 subjects: 'Web Development,Full Stack,JavaScript,React,Node.js',
                 qualifications: 'AWS Certified Solutions Architect, Google Cloud Professional',
-                profile_picture: '/uploads/profiles/sarah-profile.jpg',
+                profile_picture: '../uploads/sarah.jpg',
                 upi_id: 'sarah.johnson@upi'
             },
             {
@@ -47,7 +47,7 @@ class SeedData {
                 role: 'mentor',
                 bio: 'Product Manager and entrepreneur with experience in launching successful startups. Expert in product strategy and growth.',
                 skills: 'Product Management,Strategy,Analytics,Leadership,Agile',
-                avatar: '/uploads/avatars/michael.jpg',
+                avatar: '../uploads/michael.jpg',
                 hourlyRate: 90,
                 isActive: 1,
                 emailVerified: 1,
@@ -59,7 +59,7 @@ class SeedData {
                 languages: 'English,Mandarin',
                 subjects: 'Product Management,Business Strategy,Startup Growth,Analytics',
                 qualifications: 'Certified Product Manager (CPM), Agile Certified Practitioner',
-                profile_picture: './uploads/profiles/michael-profile.jpg',
+                profile_picture: '../uploads/michael.jpg',
                 upi_id: 'michael.chen@upi'
             },
             {
@@ -71,7 +71,7 @@ class SeedData {
                 role: 'mentor',
                 bio: 'UX/UI Designer with 6+ years experience in creating user-centered designs for web and mobile applications.',
                 skills: 'UI/UX Design,Figma,Adobe Creative Suite,User Research,Prototyping',
-                avatar: '/uploads/avatars/emma.jpg',
+                avatar: '../uploads/emma.jpg',
                 hourlyRate: 65,
                 isActive: 1,
                 emailVerified: 1,
@@ -83,7 +83,7 @@ class SeedData {
                 languages: 'English,French',
                 subjects: 'UX/UI Design,User Research,Prototyping,Design Systems',
                 qualifications: 'Adobe Certified Expert, Nielsen Norman Group UX Certification',
-                profile_picture: '/uploads/profiles/emma-profile.jpg',
+                profile_picture: '../uploads/emma.jpg',
                 upi_id: 'emma.williams@upi'
             },
             {
@@ -95,7 +95,7 @@ class SeedData {
                 role: 'mentor',
                 bio: 'Data Scientist and Machine Learning engineer with expertise in AI/ML, statistics, and big data analytics.',
                 skills: 'Python,Machine Learning,Data Science,TensorFlow,SQL,Statistics',
-                avatar: '/uploads/avatars/david.jpg',
+                avatar: '../uploads/david.jpg',
                 hourlyRate: 85,
                 isActive: 1,
                 emailVerified: 1,
@@ -107,7 +107,7 @@ class SeedData {
                 languages: 'English,Spanish,Portuguese',
                 subjects: 'Machine Learning,Data Science,Python,AI,Statistics',
                 qualifications: 'TensorFlow Developer Certificate, AWS Machine Learning Specialty',
-                profile_picture: '/uploads/profiles/david-profile.jpg',
+                profile_picture: '../uploads/david.jpg',
                 upi_id: 'david.rodriguez@upi'
             }
         ];
@@ -123,7 +123,7 @@ class SeedData {
                 role: 'mentee',
                 bio: 'Computer Science student looking to break into the tech industry. Interested in web development and software engineering.',
                 skills: 'HTML,CSS,JavaScript,Python,Learning',
-                avatar: '/uploads/avatars/alex.jpg',
+                avatar: '../uploads/alex.jpg',
                 hourlyRate: 0,
                 isActive: 1,
                 emailVerified: 1,
@@ -135,7 +135,7 @@ class SeedData {
                 languages: 'English',
                 subjects: 'Web Development,Programming,Software Engineering',
                 qualifications: 'None',
-                profile_picture: '/uploads/profiles/alex-profile.jpg',
+                profile_picture: '../uploads/alex.jpg',
                 upi_id: null
             },
             {
@@ -147,7 +147,7 @@ class SeedData {
                 role: 'mentee',
                 bio: 'Marketing professional transitioning to product management. Looking for guidance on product strategy and career development.',
                 skills: 'Marketing,Analytics,Communication,Project Management',
-                avatar: '/uploads/avatars/jessica.jpg',
+                avatar: '../uploads/jessica.jpg',
                 hourlyRate: 0,
                 isActive: 1,
                 emailVerified: 1,
@@ -159,7 +159,7 @@ class SeedData {
                 languages: 'English,Spanish',
                 subjects: 'Product Management,Marketing,Business Strategy',
                 qualifications: 'Google Analytics Certified',
-                profile_picture: '/uploads/profiles/jessica-profile.jpg',
+                profile_picture: '../uploads/jessica.jpg',
                 upi_id: null
             },
             {
@@ -171,7 +171,7 @@ class SeedData {
                 role: 'mentee',
                 bio: 'Recent graduate with a design background. Seeking mentorship in UX/UI design and portfolio development.',
                 skills: 'Design,Sketch,Photoshop,Creativity,Problem Solving',
-                avatar: '/uploads/avatars/ryan.jpg',
+                avatar: '../uploads/ryan.jpg',
                 hourlyRate: 0,
                 isActive: 1,
                 emailVerified: 1,
@@ -183,7 +183,7 @@ class SeedData {
                 languages: 'English,Korean',
                 subjects: 'UX/UI Design,Graphic Design,Portfolio Development',
                 qualifications: 'Adobe Photoshop Certified',
-                profile_picture: '/uploads/profiles/ryan-profile.jpg',
+                profile_picture: '../uploads/ryan.jpg',
                 upi_id: null
             },
             {
@@ -195,7 +195,7 @@ class SeedData {
                 role: 'mentee',
                 bio: 'Mathematics graduate interested in data science and machine learning. Looking for hands-on guidance and project experience.',
                 skills: 'Mathematics,Statistics,R,Excel,Learning',
-                avatar: './uploads/avatars/sophia.jpg',
+                avatar: '../uploads/sophia.jpg',
                 hourlyRate: 0,
                 isActive: 1,
                 emailVerified: 1,
@@ -207,7 +207,7 @@ class SeedData {
                 languages: 'English,Spanish',
                 subjects: 'Data Science,Machine Learning,Statistics,Python',
                 qualifications: 'Microsoft Excel Expert Certified',
-                profile_picture: '/uploads/profiles/sophia-profile.jpg',
+                profile_picture: '../uploads/sophia.jpg',
                 upi_id: null
             },
             {
@@ -219,7 +219,7 @@ class SeedData {
                 role: 'mentee',
                 bio: 'Self-taught developer with basic knowledge of web technologies. Seeking structured guidance to advance skills.',
                 skills: 'HTML,CSS,Basic JavaScript,Git,Learning',
-                avatar: '/uploads/avatars/james.jpg',
+                avatar: '../uploads/james.jpg',
                 hourlyRate: 0,
                 isActive: 1,
                 emailVerified: 1,
@@ -231,7 +231,7 @@ class SeedData {
                 languages: 'English',
                 subjects: 'Web Development,JavaScript,Frontend Development',
                 qualifications: 'freeCodeCamp Responsive Web Design Certificate',
-                profile_picture: '/uploads/profiles/james-profile.jpg',
+                profile_picture: '../uploads/james.jpg',
                 upi_id: null
             }
         ];
@@ -246,7 +246,7 @@ class SeedData {
             role: 'admin',
             bio: 'Platform administrator',
             skills: 'Administration,Management',
-            avatar: '/uploads/avatars/admin.jpg',
+            avatar: '../uploads/admin.jpg',
             hourlyRate: 0,
             isActive: 1,
             emailVerified: 1,
@@ -258,7 +258,7 @@ class SeedData {
             languages: 'English',
             subjects: 'Platform Management,Administration',
             qualifications: 'Certified Platform Administrator',
-            profile_picture: '/uploads/profiles/admin-profile.jpg',
+            profile_picture: '../uploads/admin.jpg',
             upi_id: 'admin@upi'
         };
 
