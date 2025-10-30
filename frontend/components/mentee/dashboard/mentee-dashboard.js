@@ -23,6 +23,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+document.addEventListener('DOMContentLoaded', () => {
+    loadMentors();
+});
+
 // document.addEventListener('DOMContentLoaded', () => {
 //     const connectForm = document.getElementById('connectForm');
 //     if (connectForm) {
@@ -41,9 +45,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     await searchMentors();
     await loadSessions();
     await loadPlatformConfig();
+    await loadMentors();
     setupRealtime();
     setupEventListeners();
 });
+
+
+// ========================================
+// LOAD MENTORS FUNCTION
+// ========================================
+async function loadMentors() {
+    console.log("🔄 Loading mentors...");
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/mentor', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log(response)
+        console.log("📡 Fetch status:", response.status);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch mentors: ${response.status}`);
+        }
+
+        const mentors = await response.json();
+        console.log("✅ Mentors received:", mentors);
+
+        displayMentors(mentors);
+    } catch (error) {
+        console.error('❌ Error loading mentors:', error);
+        const mentorsGrid = document.getElementById('mentorsGrid');
+        if (mentorsGrid) {
+            mentorsGrid.innerHTML = `
+                <div class="no-mentors">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Failed to load mentors</h3>
+                    <p>Please try again later.</p>
+                </div>
+            `;
+        }
+    }
+}
+
 
 // ========================================
 // EVENT LISTENERS SETUP
@@ -317,11 +363,11 @@ function displayMentors(mentors) {
                     <h3>${mentorName}</h3>
                     <div class="mentor-rating">
                         <span class="rating-stars">${'★'.repeat(Math.floor(mentor.rating || 4))}${'☆'.repeat(5 - Math.floor(mentor.rating || 4))}</span>
-                        <span class="rating-text">${mentor.rating || '4.0'} (${mentor.total_sessions || 0} sessions)</span>
+                        <span class="rating-text">${mentor.rating || '0.0'} (${mentor.total_sessions || 0} sessions)</span>
                     </div>
                 </div>
                 <div class="mentor-price">
-                    <span class="price">₹${mentor.hourly_rate || 0}</span>
+                    <span class="price">₹${mentor.hourlyRate || 0}</span>
                     <span class="price-unit">/hour</span>
                 </div>
             </div>
@@ -424,7 +470,7 @@ function connectWithMentor(mentorId, mentorName) {
                 <img src="${mentor.profile_picture || '/uploads/avatars/default-avatar.png'}" alt="${mentorName}">
                 <div>
                     <h4>${mentorName}</h4>
-                    <p>₹${mentor.hourly_rate || 0}/hour</p>
+                    <p>₹${mentor.hourlyRate || 0}/hour</p>
                     <span class="rating">${'★'.repeat(Math.floor(mentor.rating || 4))} ${mentor.rating || '4.0'}</span>
                 </div>
             </div>

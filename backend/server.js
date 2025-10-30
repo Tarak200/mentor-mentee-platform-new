@@ -72,6 +72,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/security', securityRoutes);
 
+app.get("/", (req, res) => res.send("API is working")); // sanity check
 // Serve frontend pages
 app.get('/', (req, res) => {
     res.setHeader('Content-Type', 'text/html');

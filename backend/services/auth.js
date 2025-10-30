@@ -27,7 +27,7 @@ class AuthService {
             const result = await db.run(`INSERT INTO mentors (
                 email, password, first_name, last_name, age, education,
                 institution, gender, languages, current_pursuit, mobile_number,
-                upi_id, available_hours, hourly_rate, qualifications, subjects
+                upi_id, available_hours, hourlyRate, qualifications, subjects
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [email, hashedPassword, firstName, lastName, age, education,
              institution, gender, JSON.stringify(languages), currentPursuit,
@@ -148,7 +148,7 @@ class AuthService {
             if (userType === 'mentor') {
                 const result = await db.run(`INSERT INTO mentors (
                     google_id, email, first_name, last_name, profile_picture,
-                    languages, available_hours, hourly_rate, qualifications, subjects, is_active
+                    languages, available_hours, hourlyRate, qualifications, subjects, is_active
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [userData.google_id, userData.email, userData.first_name, userData.last_name,
                  userData.profile_picture, userData.languages, userData.available_hours,

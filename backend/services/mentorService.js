@@ -40,6 +40,67 @@ class MentorService {
         }
     }
 
+    // Get all mentors
+    async getAllMentors() {
+        console.log("Fetching all mentors from DB");
+        return new Promise((resolve, reject) => {
+            console.log("Running query on DB...");
+            console.log("DB object check:", db);
+            console.log("DB readyState:", typeof db.all === 'function' ? 'OK' : 'INVALID');
+
+            db.all(`
+                SELECT 
+                    id, firstName AS first_name, lastName AS last_name, 
+                    education, institution, current_pursuit,
+                    languages, subjects, qualifications, bio, 
+                    profile_picture, hourlyRate, rating,
+                    available_hours
+                FROM users
+                WHERE role = 'mentor'
+            `, [], (err, rows) => {
+                console.log("DB callback triggered"); // ✅ You should see this
+                if (err) {
+                    console.error("Error fetching mentors from DB:", err);
+                    return reject(err);
+                }
+
+                console.log("DB rows returned:", rows?.length || 0);
+
+                const safeParse = (value) => {
+                    if (!value) return [];
+                    try {
+                        return JSON.parse(value);
+                    } catch {
+                        return typeof value === 'string' && value.includes(',')
+                            ? value.split(',').map(v => v.trim())
+                            : Array.isArray(value) ? value : [value];
+                    }
+                };
+
+                const mentors = rows.map(row => ({
+                    id: row.id,
+                    first_name: row.first_name,
+                    last_name: row.last_name,
+                    education: row.education || "",
+                    institution: row.institution || "",
+                    current_pursuit: row.current_pursuit || "",
+                    languages: safeParse(row.languages),
+                    subjects: safeParse(row.subjects),
+                    qualifications: row.qualifications || "",
+                    bio: row.bio || "",
+                    profile_picture: row.profile_picture || "",
+                    hourlyRate: Number(row.hourlyRate) || 0,
+                    rating: Number(row.rating) || 0,
+                    available_hours: safeParse(row.available_hours)
+                }));
+
+                console.log("Mentors fetched:", mentors);
+                resolve(mentors);
+            });
+        });
+    }
+
+
     // Get mentor's mentees
     async getMentees(mentorId, options = {}) {
         try {

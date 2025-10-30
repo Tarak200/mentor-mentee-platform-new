@@ -11,6 +11,19 @@ const requireMentor = (req, res, next) => {
     next();
 };
 
+
+// Fetch all mentors
+router.get('/', authMiddleware.authenticateToken, async (req, res) => {
+    try {
+        const mentors = await mentorService.getAllMentors(); // returns array of mentor objects
+        res.json(mentors);
+        console.log('Fetched mentors:', mentors);
+    } catch (err) {
+        console.error('Error fetching mentors:', err);
+        res.status(500).json({ error: 'Failed to fetch mentors' });
+    }
+});
+
 // Get mentor dashboard stats
 router.get('/stats', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
@@ -64,51 +77,33 @@ router.get('/mentees/:menteeId', authMiddleware.authenticateToken, requireMentor
 
 // GET /api/mentor/:mentorId
 router.get('/:mentorId', authMiddleware.authenticateToken, async (req, res) => {
-//   try {
-//     const { mentorId } = req.params;
-//     console.log("backend function called");
-
-//     // You can fetch mentor details from DB using a service or model
-//     const mentor = await mentorService.getMentorDetails(mentorId);
-//     console.log("Mentor details:", mentor);
-
-//     if (!mentor) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'Mentor not found'
-//       });
-//     }
-
-//     // Respond in a format expected by frontend
-//     res.json({
-//       success: true,
-//       mentor
-//     });
-//   } catch (error) {
-//     console.error('Error fetching mentor details:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Internal server error'
-//     });
-//   }
-    console.log('Mentor route hit:', req.params);
-    try {
+  try {
     const { mentorId } = req.params;
-    console.log("backend function called with mentorId:", mentorId);
+    // console.log("backend function called");
 
+    // You can fetch mentor details from DB using a service or model
     const mentor = await mentorService.getMentorDetails(mentorId);
-    console.log("✅ mentorService response:", mentor);
+    console.log("Mentor details:", mentor);
 
     if (!mentor) {
-        console.log("⚠️ Mentor not found for ID:", mentorId);
-        return res.status(404).json({ success: false, message: 'Mentor not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Mentor not found'
+      });
     }
 
-    res.json({ success: true, mentor });
-    } catch (error) {
-    console.error('❌ Error fetching mentor details:', error.stack);
-    res.status(500).json({ success: false, message: 'Internal server error' });
-    }
+    // Respond in a format expected by frontend
+    res.json({
+      success: true,
+      mentor
+    });
+  } catch (error) {
+    console.error('Error fetching mentor details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
 });
 
 

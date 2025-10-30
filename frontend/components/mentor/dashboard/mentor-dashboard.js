@@ -137,7 +137,7 @@ async function loadProfile() {
                     </div>
                     <div class="profile-item">
                         <label>Hourly Rate</label>
-                        <span class="price-highlight">₹${user.hourly_rate}/hour</span>
+                        <span class="price-highlight">₹${user.hourlyRate}/hour</span>
                     </div>
                     <div class="profile-item">
                         <label>Languages</label>

@@ -16,6 +16,8 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+
+
 // GET /api/mentee/mentors
 router.get('/mentors', async (req, res) => {
   try {
@@ -47,7 +49,7 @@ router.get('/find-mentors', async (req, res) => {
       const firstName = m.firstName ?? m.first_name ?? '';
       const lastName = m.lastName ?? m.last_name ?? '';
       const avatar = m.avatar ?? m.profile_picture ?? null;
-      const hourlyRate = (m.hourlyRate ?? m.hourly_rate ?? null);
+      const hourlyRate = (m.hourlyRate ?? m.hourlyRate ?? null);
       const rating = Number(m.averageRating ?? m.rating ?? 4);
       const totalSessions = m.menteeCount ?? m.total_sessions ?? 0;
       const languages = Array.isArray(m.languages) ? m.languages : [];
@@ -59,7 +61,7 @@ router.get('/find-mentors', async (req, res) => {
         first_name: firstName,
         last_name: lastName,
         profile_picture: avatar,
-        hourly_rate: hourlyRate,
+        hourlyRate: hourlyRate,
         rating,
         total_sessions: totalSessions,
         languages,
