@@ -42,65 +42,34 @@ class MentorService {
 
     // Get all mentors
     async getAllMentors() {
-        console.log("Fetching all mentors from DB");
         return new Promise((resolve, reject) => {
-            console.log("Running query on DB...");
-            console.log("DB object check:", db);
-            console.log("DB readyState:", typeof db.all === 'function' ? 'OK' : 'INVALID');
-
-            db.all(`
-                SELECT 
-                    id, firstName AS first_name, lastName AS last_name, 
-                    education, institution, current_pursuit,
-                    languages, subjects, qualifications, bio, 
-                    profile_picture, hourlyRate, rating,
-                    available_hours
-                FROM users
-                WHERE role = 'mentor'
-            `, [], (err, rows) => {
-                console.log("DB callback triggered"); // ✅ You should see this
+            console.log("📊 Starting getAllMentors query...");
+            
+            const query = `SELECT u.id, u.firstName AS first_name, u.lastName AS last_name, u.education, u.institution, u.current_pursuit, u.languages, u.subjects, u.qualifications, u.bio, u.profile_picture, u.hourlyRate AS hourly_rate, u.rating, u.available_hours, COUNT(ms.id) AS total_sessions FROM users u LEFT JOIN mentoring_sessions ms ON u.id = ms.mentorId AND ms.status = 'completed' WHERE u.role = 'mentor' GROUP BY u.id, u.firstName, u.lastName, u.education, u.institution, u.current_pursuit, u.languages, u.subjects, u.qualifications, u.bio, u.profile_picture, u.hourlyRate, u.rating, u.available_hours;`;
+            
+            db.all(query, [], (err, rows) => {
+                console.log("✅ DB callback triggered");
+                
                 if (err) {
-                    console.error("Error fetching mentors from DB:", err);
+                    console.error("❌ Error fetching mentors from DB:", err);
                     return reject(err);
                 }
-
-                console.log("DB rows returned:", rows?.length || 0);
-
-                const safeParse = (value) => {
-                    if (!value) return [];
-                    try {
-                        return JSON.parse(value);
-                    } catch {
-                        return typeof value === 'string' && value.includes(',')
-                            ? value.split(',').map(v => v.trim())
-                            : Array.isArray(value) ? value : [value];
-                    }
-                };
-
+                
+                console.log(`✅ Found ${rows?.length || 0} mentors`);
+                
                 const mentors = rows.map(row => ({
-                    id: row.id,
-                    first_name: row.first_name,
-                    last_name: row.last_name,
-                    education: row.education || "",
-                    institution: row.institution || "",
-                    current_pursuit: row.current_pursuit || "",
-                    languages: safeParse(row.languages),
-                    subjects: safeParse(row.subjects),
-                    qualifications: row.qualifications || "",
-                    bio: row.bio || "",
-                    profile_picture: row.profile_picture || "",
-                    hourlyRate: Number(row.hourlyRate) || 0,
-                    rating: Number(row.rating) || 0,
-                    available_hours: safeParse(row.available_hours)
+                    ...row,
+                    languages: row.languages ? JSON.parse(row.languages) : [],
+                    subjects: row.subjects ? JSON.parse(row.subjects) : [],
+                    available_hours: row.available_hours ? JSON.parse(row.available_hours) : []
                 }));
-
-                console.log("Mentors fetched:", mentors);
+                
                 resolve(mentors);
             });
+
         });
+
     }
-
-
     // Get mentor's mentees
     async getMentees(mentorId, options = {}) {
         try {
@@ -147,33 +116,85 @@ class MentorService {
     }
 
     // Get mentor details
-    async getMentorDetails(mentorId) {
+    async getAllMentors() {
         try {
-            const mentor = await db.get(
-            `SELECT id, firstName AS first_name, lastName AS last_name, education, institution,
-                    current_pursuit, languages, subjects, qualifications, bio, profile_picture
-            FROM users
-            WHERE id = ? AND role = 'mentor'`,
-            [mentorId]
-            );
-
-            if (!mentor) return null;
-
-            // Parse JSON fields if stored as text (e.g., ["English","Hindi"])
-            if (typeof mentor.languages === 'string') {
-            try { mentor.languages = JSON.parse(mentor.languages); } catch { mentor.languages = [mentor.languages]; }
-            }
-            if (typeof mentor.subjects === 'string') {
-            try { mentor.subjects = JSON.parse(mentor.subjects); } catch { mentor.subjects = [mentor.subjects]; }
-            }
-
-            return mentor;
+            console.log("📊 Starting getAllMentors query...");
+            const startTime = Date.now();
+            
+            const query = `
+                SELECT 
+                    u.id, 
+                    u.firstName AS first_name, 
+                    u.lastName AS last_name, 
+                    u.education, 
+                    u.institution, 
+                    u.current_pursuit, 
+                    u.languages, 
+                    u.subjects, 
+                    u.qualifications, 
+                    u.bio, 
+                    u.profile_picture, 
+                    u.hourlyRate AS hourly_rate, 
+                    u.rating, 
+                    u.available_hours,
+                    COUNT(ms.id) AS total_sessions
+                FROM users u
+                LEFT JOIN mentoring_sessions ms ON u.id = ms.mentorId AND ms.status = 'completed'
+                WHERE u.role = 'mentor'
+                GROUP BY u.id, u.firstName, u.lastName, u.education, u.institution, 
+                        u.current_pursuit, u.languages, u.subjects, u.qualifications, 
+                        u.bio, u.profile_picture, u.hourlyRate, u.rating, u.available_hours
+            `;
+            
+            const rows = await db.all(query, []);
+            
+            console.log(`✅ Found ${rows?.length || 0} mentors in ${Date.now() - startTime}ms`);
+            
+            const mentors = rows.map(row => ({
+                firstName: row.first_name,
+                lastName: row.last_name,
+                education: row.education,   
+                institution: row.institution,
+                rating: row.rating,
+                profile_picture: row.profile_picture,
+                qualifications: row.qualifications,
+                bio: row.bio,
+                total_sessions: row.total_sessions,
+                current_pursuit: row.current_pursuit,   
+                languages: this.parseArrayField(row.languages),
+                subjects: this.parseArrayField(row.subjects),
+                available_hours: this.parseArrayField(row.available_hours),
+                hourlyRate: row.hourly_rate,
+            }));
+            
+            return mentors;
         } catch (error) {
-            console.error('Error fetching mentor details from DB:', error);
+            console.error('❌ Error fetching mentors from DB:', error);
             throw error;
         }
     }
-    
+
+    // Helper method to parse array fields (handles multiple formats)
+    parseArrayField(value) {
+        if (!value) return [];
+        
+        // Already an array
+        if (Array.isArray(value)) return value;
+        
+        // Try parsing as JSON first
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : [parsed];
+            } catch {
+                // If JSON parse fails, treat as comma-separated string
+                return value.split(',').map(item => item.trim()).filter(Boolean);
+            }
+        }
+        
+        return [value];
+    }
+
     // Get mentor's sessions
     async getSessions(mentorId, options = {}) {
         try {

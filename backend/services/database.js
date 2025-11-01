@@ -210,6 +210,7 @@ class DatabaseService {
             'CREATE INDEX IF NOT EXISTS idx_sessions_mentee ON mentoring_sessions(menteeId)',
             'CREATE INDEX IF NOT EXISTS idx_sessions_scheduled ON mentoring_sessions(scheduledAt)',
             'CREATE INDEX IF NOT EXISTS idx_sessions_status ON mentoring_sessions(status)',
+            'CREATE INDEX IF NOT EXISTS idx_sessions_mentor_status ON mentoring_sessions(mentorId, status)',
             'CREATE INDEX IF NOT EXISTS idx_relationships_mentor ON mentor_mentee_relationships(mentorId)',
             'CREATE INDEX IF NOT EXISTS idx_relationships_mentee ON mentor_mentee_relationships(menteeId)',
             'CREATE INDEX IF NOT EXISTS idx_requests_mentor ON mentoring_requests(mentorId)',

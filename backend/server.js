@@ -27,6 +27,7 @@ const securityRoutes = require('./routes/security');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(corsMiddleware);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // setting X-Frame-Options header to DENY
 app.use((req, res, next) => {
@@ -72,7 +73,6 @@ app.use('/api/user', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/security', securityRoutes);
 
-app.get("/", (req, res) => res.send("API is working")); // sanity check
 // Serve frontend pages
 app.get('/', (req, res) => {
     res.setHeader('Content-Type', 'text/html');
