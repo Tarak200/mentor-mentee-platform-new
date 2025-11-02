@@ -1254,7 +1254,7 @@ function closeSuccessPopup() {
 function logout() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    window.location.href = '/';
+    window.location.href = '/mentee/login';
 }
 
 // ========================================
