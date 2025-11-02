@@ -59,7 +59,7 @@ class AuthController {
             await db.run(
                 `INSERT INTO users (
                     id, firstName, lastName, email, password, role, 
-                    isActive, emailVerified, settings, createdAt, updatedAt
+                    isActive, emailVerified, settings, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?)`,
                 [
                     userId, 
@@ -241,7 +241,7 @@ class AuthController {
 
             // Store reset token
             await db.run(
-                `INSERT INTO password_reset_tokens (id, userId, token, expiresAt, createdAt)
+                `INSERT INTO password_reset_tokens (id, userId, token, expiresAt, created_at)
                  VALUES (?, ?, ?, ?, ?)`,
                 [generateId(), user.id, resetToken, expiresAt, new Date().toISOString()]
             );
@@ -305,7 +305,7 @@ class AuthController {
 
             // Update password
             await db.run(
-                'UPDATE users SET password = ?, updatedAt = ? WHERE id = ?',
+                'UPDATE users SET password = ?, updated_at = ? WHERE id = ?',
                 [hashedPassword, new Date().toISOString(), resetRecord.userId]
             );
 

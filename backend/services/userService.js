@@ -26,13 +26,13 @@ class UserService {
     }
 
     // Update user profile
-    async updateUserProfile(userId, updateData) {
+    async updateUserProfile(userId, updated_ata) {
         try {
             // Check if email is being changed and if it's already in use
-            if (updateData.email) {
+            if (updated_ata.email) {
                 const existingUser = await db.get(
                     'SELECT id FROM users WHERE email = ? AND id != ?',
-                    [updateData.email, userId]
+                    [updated_ata.email, userId]
                 );
                 
                 if (existingUser) {
@@ -52,18 +52,18 @@ class UserService {
             ];
 
             regularFields.forEach(field => {
-                if (updateData.hasOwnProperty(field)) {
+                if (updated_ata.hasOwnProperty(field)) {
                     updateFields.push(`${field} = ?`);
-                    updateValues.push(updateData[field]);
+                    updateValues.push(updated_ata[field]);
                 }
             });
 
             // Handle JSON fields
             const jsonFields = ['expertise', 'availability', 'interests', 'paymentMethods'];
             jsonFields.forEach(field => {
-                if (updateData.hasOwnProperty(field)) {
+                if (updated_ata.hasOwnProperty(field)) {
                     updateFields.push(`${field} = ?`);
-                    updateValues.push(JSON.stringify(updateData[field]));
+                    updateValues.push(JSON.stringify(updated_ata[field]));
                 }
             });
 
@@ -71,7 +71,7 @@ class UserService {
                 return this.getUserProfile(userId);
             }
 
-            updateFields.push('updatedAt = ?');
+            updateFields.push('updated_at = ?');
             updateValues.push(new Date().toISOString());
             updateValues.push(userId);
 
@@ -91,7 +91,7 @@ class UserService {
     async updateUserAvatar(userId, avatarUrl) {
         try {
             await db.run(
-                'UPDATE users SET avatar = ?, updatedAt = ? WHERE id = ?',
+                'UPDATE users SET avatar = ?, updated_at = ? WHERE id = ?',
                 [avatarUrl, new Date().toISOString(), userId]
             );
             
@@ -126,7 +126,7 @@ class UserService {
 
             // Update password
             await db.run(
-                'UPDATE users SET password = ?, updatedAt = ? WHERE id = ?',
+                'UPDATE users SET password = ?, updated_at = ? WHERE id = ?',
                 [hashedNewPassword, new Date().toISOString(), userId]
             );
 
@@ -159,14 +159,14 @@ class UserService {
             
             // Try to update first
             const result = await db.run(
-                'UPDATE user_settings SET settings = ?, updatedAt = ? WHERE userId = ?',
+                'UPDATE user_settings SET settings = ?, updated_at = ? WHERE userId = ?',
                 [settingsJson, new Date().toISOString(), userId]
             );
 
             // If no rows affected, insert new record
             if (result.changes === 0) {
                 await db.run(
-                    'INSERT INTO user_settings (userId, settings, createdAt, updatedAt) VALUES (?, ?, ?, ?)',
+                    'INSERT INTO user_settings (userId, settings, created_at, updated_at) VALUES (?, ?, ?, ?)',
                     [userId, settingsJson, new Date().toISOString(), new Date().toISOString()]
                 );
             }
@@ -231,10 +231,10 @@ class UserService {
             const offset = (page - 1) * limit;
 
             const activities = await db.all(
-                `SELECT type, description, createdAt, data 
+                `SELECT type, description, created_at, data 
                  FROM activity_logs 
                  WHERE userId = ? 
-                 ORDER BY createdAt DESC 
+                 ORDER BY created_at DESC 
                  LIMIT ? OFFSET ?`,
                 [userId, limit, offset]
             );
@@ -276,7 +276,7 @@ class UserService {
     async logActivity(userId, type, description, data = {}) {
         try {
             await db.run(
-                'INSERT INTO activity_logs (userId, type, description, data, createdAt) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO activity_logs (userId, type, description, data, created_at) VALUES (?, ?, ?, ?, ?)',
                 [userId, type, description, JSON.stringify(data), new Date().toISOString()]
             );
         } catch (error) {
@@ -304,8 +304,8 @@ class UserService {
             stats.profileCompletion = Math.round((completedFields.length / requiredFields.length) * 100);
 
             // Account age
-            if (user.createdAt) {
-                const createdDate = new Date(user.createdAt);
+            if (user.created_at) {
+                const createdDate = new Date(user.created_at);
                 const now = new Date();
                 stats.accountAge = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
             }

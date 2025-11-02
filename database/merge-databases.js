@@ -50,7 +50,7 @@ async function upsertUser(target, user) {
   const now = new Date().toISOString();
   await target.run(
     `INSERT INTO users (
-      id, firstName, lastName, email, password, role, phone, isActive, emailVerified, settings, createdAt, updatedAt
+      id, firstName, lastName, email, password, role, phone, isActive, emailVerified, settings, created_at, updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?)`,
     [
       user.id,

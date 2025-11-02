@@ -7,7 +7,7 @@ class NotificationService {
     const params = [userId];
     if (unreadOnly) { where.push('isRead = 0'); }
     const rows = await db.all(
-      `SELECT * FROM notifications WHERE ${where.join(' AND ')} ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
+      `SELECT * FROM notifications WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
     const countRow = await db.get(`SELECT COUNT(*) as count FROM notifications WHERE ${where.join(' AND ')}`, params);
@@ -43,7 +43,7 @@ class NotificationService {
     const user = await db.get('SELECT settings FROM users WHERE id = ?', [userId]);
     const settings = user?.settings ? JSON.parse(user.settings) : {};
     settings.notificationPreferences = { ...(settings.notificationPreferences || {}), ...(preferences || {}) };
-    await db.run('UPDATE users SET settings = ?, updatedAt = ? WHERE id = ?', [JSON.stringify(settings), new Date().toISOString(), userId]);
+    await db.run('UPDATE users SET settings = ?, updated_at = ? WHERE id = ?', [JSON.stringify(settings), new Date().toISOString(), userId]);
     return settings.notificationPreferences;
   }
 
@@ -51,11 +51,11 @@ class NotificationService {
     const id = Date.now().toString();
     const now = new Date().toISOString();
     await db.run(
-      `INSERT INTO notifications (id, userId, type, title, message, data, isRead, createdAt)
+      `INSERT INTO notifications (id, userId, type, title, message, data, isRead, created_at)
        VALUES (?, ?, ?, ?, ?, ?, 0, ?)`,
       [id, userId, type, title, message, JSON.stringify(data || {}), now]
     );
-    return { id, userId, title, message, type, data, isRead: 0, createdAt: now };
+    return { id, userId, title, message, type, data, isRead: 0, created_at: now };
   }
 }
 

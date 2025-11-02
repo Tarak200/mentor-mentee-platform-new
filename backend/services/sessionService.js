@@ -47,7 +47,7 @@ class SessionService {
     }
 
     // Update session
-    async updateSession(sessionId, userId, updateData) {
+    async updateSession(sessionId, userId, updated_ata) {
         try {
             const session = await db.get(
                 'SELECT * FROM mentoring_sessions WHERE id = ? AND (mentorId = ? OR menteeId = ?)',
@@ -61,9 +61,9 @@ class SessionService {
             const allowedFields = ['title', 'description', 'scheduledAt', 'duration', 'status', 'notes'];
             const updates = {};
             
-            Object.keys(updateData).forEach(key => {
+            Object.keys(updated_ata).forEach(key => {
                 if (allowedFields.includes(key)) {
-                    updates[key] = updateData[key];
+                    updates[key] = updated_ata[key];
                 }
             });
 
@@ -76,7 +76,7 @@ class SessionService {
                 updates.scheduledAt = new Date(updates.scheduledAt).toISOString();
             }
 
-            updates.updatedAt = new Date().toISOString();
+            updates.updated_at = new Date().toISOString();
 
             const setClause = Object.keys(updates).map(key => `${key} = ?`).join(', ');
             const values = [...Object.values(updates), sessionId];
@@ -112,7 +112,7 @@ class SessionService {
             const now = new Date().toISOString();
             
             await db.run(
-                'UPDATE mentoring_sessions SET status = "in_progress", actualStartTime = ?, updatedAt = ? WHERE id = ?',
+                'UPDATE mentoring_sessions SET status = "in_progress", actualStartTime = ?, updated_at = ? WHERE id = ?',
                 [now, now, sessionId]
             );
 
@@ -144,7 +144,7 @@ class SessionService {
             
             await db.run(
                 `UPDATE mentoring_sessions 
-                 SET status = "completed", actualEndTime = ?, notes = ?, summary = ?, updatedAt = ? 
+                 SET status = "completed", actualEndTime = ?, notes = ?, summary = ?, updated_at = ? 
                  WHERE id = ?`,
                 [now, notes, summary, now, sessionId]
             );
@@ -184,7 +184,7 @@ class SessionService {
             const now = new Date().toISOString();
             
             await db.run(
-                'UPDATE mentoring_sessions SET status = "cancelled", cancellationReason = ?, updatedAt = ? WHERE id = ?',
+                'UPDATE mentoring_sessions SET status = "cancelled", cancellationReason = ?, updated_at = ? WHERE id = ?',
                 [reason, now, sessionId]
             );
 
@@ -230,7 +230,7 @@ class SessionService {
             
             await db.run(
                 `UPDATE mentoring_sessions 
-                 SET scheduledAt = ?, rescheduleReason = ?, updatedAt = ? 
+                 SET scheduledAt = ?, rescheduleReason = ?, updated_at = ? 
                  WHERE id = ?`,
                 [scheduledAt, reason, now, sessionId]
             );
@@ -286,7 +286,7 @@ class SessionService {
             const now = new Date().toISOString();
             
             await db.run(
-                'UPDATE mentoring_sessions SET notes = ?, summary = ?, updatedAt = ? WHERE id = ?',
+                'UPDATE mentoring_sessions SET notes = ?, summary = ?, updated_at = ? WHERE id = ?',
                 [notes, summary, now, sessionId]
             );
 

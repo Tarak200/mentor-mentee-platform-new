@@ -15,7 +15,7 @@ router.post('/', async (req, res) => {
     const id = Date.now().toString();
     const now = new Date().toISOString();
     await db.run(
-      `INSERT INTO reviews (id, mentorId, menteeId, sessionId, rating, comment, createdAt, updatedAt)
+      `INSERT INTO reviews (id, mentorId, menteeId, sessionId, rating, comment, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, mentorId, req.user.userId || req.user.id, sessionId || null, Number(rating), String(comment).slice(0, 1000), now, now]
     );
@@ -33,7 +33,7 @@ router.get('/by-mentor/:mentorId', async (req, res) => {
        FROM reviews r
        JOIN users u ON u.id = r.menteeId
        WHERE r.mentorId = ?
-       ORDER BY r.createdAt DESC
+       ORDER BY r.created_at DESC
        LIMIT 50`,
       [req.params.mentorId]
     );

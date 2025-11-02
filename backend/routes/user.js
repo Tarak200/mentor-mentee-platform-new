@@ -27,11 +27,11 @@ const userId = req.user.userId || req.user.id;
 router.put('/profile', authMiddleware.authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const updateData = req.body;
+        const updated_ata = req.body;
 
         // Validate required fields
         const requiredFields = ['firstName', 'lastName', 'email'];
-        const missingFields = requiredFields.filter(field => !updateData[field]);
+        const missingFields = requiredFields.filter(field => !updated_ata[field]);
         
         if (missingFields.length > 0) {
             return res.status(400).json({ 
@@ -40,7 +40,7 @@ router.put('/profile', authMiddleware.authenticateToken, async (req, res) => {
         }
 
         // Update user profile
-        const updatedUser = await userService.updateUserProfile(userId, updateData);
+        const updatedUser = await userService.updateUserProfile(userId, updated_ata);
         
         if (!updatedUser) {
             return res.status(404).json({ error: 'User not found' });

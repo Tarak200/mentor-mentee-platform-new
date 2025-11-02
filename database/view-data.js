@@ -16,18 +16,18 @@ async function viewUsers() {
 
     // Fetch mentors
     const mentors = await dbService.all(`
-      SELECT id, firstName, lastName, email, password as plainPassword, createdAt
+      SELECT id, firstName, lastName, email, password as plainPassword, created_at
       FROM users
       WHERE role = 'mentor'
-      ORDER BY createdAt DESC
+      ORDER BY created_at DESC
     `);
 
     // Fetch mentees
     const mentees = await dbService.all(`
-      SELECT id, firstName, lastName, email, password as plainPassword, createdAt
+      SELECT id, firstName, lastName, email, password as plainPassword, created_at
       FROM users
       WHERE role = 'mentee'
-      ORDER BY createdAt DESC
+      ORDER BY created_at DESC
     `);
 
     // Show mentors
@@ -40,7 +40,7 @@ async function viewUsers() {
         console.log(
           `${i + 1}. ${u.firstName} ${u.lastName} | 📧 ${u.email}\n   🔐 Hashed: ${
             u.password
-          }\n   🔑 Plain : ${u.plainPassword || "N/A"}\n   📅 ${u.createdAt}\n`
+          }\n   🔑 Plain : ${u.plainPassword || "N/A"}\n   📅 ${u.created_at}\n`
         );
       });
     }
@@ -55,7 +55,7 @@ async function viewUsers() {
         console.log(
           `${i + 1}. ${u.firstName} ${u.lastName} | 📧 ${u.email}\n   🔐 Hashed: ${
             u.password
-          }\n   🔑 Plain : ${u.plainPassword || "N/A"}\n   📅 ${u.createdAt}\n`
+          }\n   🔑 Plain : ${u.plainPassword || "N/A"}\n   📅 ${u.created_at}\n`
         );
       });
     }

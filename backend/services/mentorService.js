@@ -78,7 +78,7 @@ class MentorService {
 
             let sql = `
                 SELECT u.id, u.firstName, u.lastName, u.avatar, u.email, 
-                       r.status, r.createdAt as relationshipStart,
+                       r.status, r.created_at as relationshipStart,
                        COUNT(s.id) as sessionsCount,
                        MAX(s.scheduledAt) as lastSession
                 FROM mentor_mentee_relationships r
@@ -99,7 +99,7 @@ class MentorService {
                 params.push(`%${search}%`, `%${search}%`, `%${search}%`);
             }
 
-            sql += ' GROUP BY u.id, r.id ORDER BY r.createdAt DESC LIMIT ? OFFSET ?';
+            sql += ' GROUP BY u.id, r.id ORDER BY r.created_at DESC LIMIT ? OFFSET ?';
             params.push(limit, offset);
 
             const mentees = await db.all(sql, params);
@@ -271,7 +271,7 @@ class MentorService {
             
             await db.run(
                 `INSERT INTO mentoring_sessions 
-                 (id, mentorId, menteeId, title, description, scheduledAt, duration, amount, status, createdAt, updatedAt)
+                 (id, mentorId, menteeId, title, description, scheduledAt, duration, amount, status, created_at, updated_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'upcoming', ?, ?)`,
                 [
                     sessionId, mentorId, menteeId, title, description,
@@ -311,10 +311,10 @@ class MentorService {
     async getRecentActivity(mentorId, limit = 10) {
         try {
             return await db.all(
-                `SELECT type, description, createdAt, data 
+                `SELECT type, description, created_at, data 
                  FROM activity_logs 
                  WHERE userId = ? 
-                 ORDER BY createdAt DESC 
+                 ORDER BY created_at DESC 
                  LIMIT ?`,
                 [mentorId, limit]
             );
@@ -333,7 +333,7 @@ class MentorService {
                  FROM mentoring_requests r
                  JOIN users u ON r.menteeId = u.id
                  WHERE r.mentorId = ? AND r.status = 'pending'
-                 ORDER BY r.createdAt DESC`,
+                 ORDER BY r.created_at DESC`,
                 [mentorId]
             );
         } catch (error) {
@@ -360,7 +360,7 @@ class MentorService {
             try {
                 // Update request status
                 await db.run(
-                    'UPDATE mentoring_requests SET status = "accepted", updatedAt = ? WHERE id = ?',
+                    'UPDATE mentoring_requests SET status = "accepted", updated_at = ? WHERE id = ?',
                     [new Date().toISOString(), requestId]
                 );
 
@@ -368,7 +368,7 @@ class MentorService {
                 const relationshipId = Date.now().toString();
                 await db.run(
                     `INSERT INTO mentor_mentee_relationships 
-                     (id, mentorId, menteeId, status, createdAt, updatedAt)
+                     (id, mentorId, menteeId, status, created_at, updated_at)
                      VALUES (?, ?, ?, 'active', ?, ?)`,
                     [
                         relationshipId, mentorId, request.menteeId,

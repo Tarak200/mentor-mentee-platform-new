@@ -5,7 +5,7 @@ class SecurityService {
     const id = Date.now().toString();
     const now = new Date().toISOString();
     await db.run(
-      `INSERT INTO security_events (id, userId, type, description, ipAddress, userAgent, data, severity, createdAt)
+      `INSERT INTO security_events (id, userId, type, description, ipAddress, userAgent, data, severity, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, event.userId || null, event.type, event.description || '', event.ip || '', event.userAgent || '', JSON.stringify(event.data||{}), event.severity || 'medium', now]
     );
@@ -17,10 +17,10 @@ class SecurityService {
     const params = [userId];
     if (eventType) { where.push('type = ?'); params.push(eventType); }
     if (severity) { where.push('severity = ?'); params.push(severity); }
-    if (dateFrom) { where.push('createdAt >= ?'); params.push(dateFrom); }
-    if (dateTo) { where.push('createdAt <= ?'); params.push(dateTo); }
+    if (dateFrom) { where.push('created_at >= ?'); params.push(dateFrom); }
+    if (dateTo) { where.push('created_at <= ?'); params.push(dateTo); }
     const offset = (page - 1) * limit;
-    const rows = await db.all(`SELECT * FROM security_events WHERE ${where.join(' AND ')} ORDER BY createdAt DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
+    const rows = await db.all(`SELECT * FROM security_events WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
     return { data: rows, page, limit };
   }
 
@@ -30,7 +30,7 @@ class SecurityService {
       `SELECT COUNT(*) as total, 
               SUM(CASE WHEN severity = 'high' OR severity = 'critical' THEN 1 ELSE 0 END) as high
          FROM security_events
-        WHERE (userId = ? OR userId IS NULL) AND datetime(createdAt) >= ${since}`,[userId]);
+        WHERE (userId = ? OR userId IS NULL) AND datetime(created_at) >= ${since}`,[userId]);
     return { total: row?.total || 0, high: row?.high || 0, period };
   }
 
@@ -38,7 +38,7 @@ class SecurityService {
     const id = Date.now().toString();
     const now = new Date().toISOString();
     await db.run(
-      `INSERT INTO security_events (id, userId, type, description, ipAddress, userAgent, data, severity, createdAt)
+      `INSERT INTO security_events (id, userId, type, description, ipAddress, userAgent, data, severity, created_at)
        VALUES (?, ?, 'incident', ?, ?, ?, ?, ?, ?)`,
       [id, payload.userId || null, payload.title + ' - ' + payload.description, payload.ip || '', payload.userAgent || '', JSON.stringify({ category: payload.category }), payload.severity || 'medium', now]
     );

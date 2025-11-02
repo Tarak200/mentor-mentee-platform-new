@@ -298,40 +298,40 @@ class SeedData {
                 mentorId: 'mentor_1',
                 menteeId: 'mentee_1',
                 status: 'active',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             },
             {
                 id: 'rel_2',
                 mentorId: 'mentor_2',
                 menteeId: 'mentee_2',
                 status: 'active',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             },
             {
                 id: 'rel_3',
                 mentorId: 'mentor_3',
                 menteeId: 'mentee_3',
                 status: 'active',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             },
             {
                 id: 'rel_4',
                 mentorId: 'mentor_4',
                 menteeId: 'mentee_4',
                 status: 'active',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             },
             {
                 id: 'rel_5',
                 mentorId: 'mentor_1',
                 menteeId: 'mentee_5',
                 status: 'active',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             }
         ];
 
@@ -350,7 +350,7 @@ class SeedData {
         const lastWeek = new Date(now);
         lastWeek.setDate(lastWeek.getDate() - 7);
 
-        const createdAt = new Date().toISOString();
+        const created_at = new Date().toISOString();
 
         this.sessions = [
             // Completed sessions
@@ -371,8 +371,8 @@ class SeedData {
                 cancellationReason: null,
                 rescheduleReason: null,
                 paymentStatus: 'paid',
-                createdAt,
-                updatedAt: createdAt
+                created_at,
+                updated_at: created_at
             },
             {
                 id: 'session_2',
@@ -391,8 +391,8 @@ class SeedData {
                 cancellationReason: null,
                 rescheduleReason: null,
                 paymentStatus: 'paid',
-                createdAt,
-                updatedAt: createdAt
+                created_at,
+                updated_at: created_at
             },
             // Upcoming sessions
             {
@@ -412,8 +412,8 @@ class SeedData {
                 cancellationReason: null,
                 rescheduleReason: null,
                 paymentStatus: 'pending',
-                createdAt,
-                updatedAt: createdAt
+                created_at,
+                updated_at: created_at
             },
             {
                 id: 'session_4',
@@ -432,8 +432,8 @@ class SeedData {
                 cancellationReason: null,
                 rescheduleReason: null,
                 paymentStatus: 'pending',
-                createdAt,
-                updatedAt: createdAt
+                created_at,
+                updated_at: created_at
             },
             {
                 id: 'session_5',
@@ -452,8 +452,8 @@ class SeedData {
                 cancellationReason: null,
                 rescheduleReason: null,
                 paymentStatus: 'pending',
-                createdAt,
-                updatedAt: createdAt
+                created_at,
+                updated_at: created_at
             }
         ];
 
@@ -473,8 +473,8 @@ class SeedData {
                 goals: 'Learn product strategy, user research, and roadmap planning',
                 preferredSchedule: 'Weekday evenings, flexible on weekends',
                 status: 'pending',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             },
             {
                 id: 'req_2',
@@ -484,8 +484,8 @@ class SeedData {
                 goals: 'Build ML projects, learn Python for data science',
                 preferredSchedule: 'Weekend mornings work best for me',
                 status: 'pending',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             }
         ];
 
@@ -504,8 +504,8 @@ class SeedData {
                 sessionId: 'session_1',
                 rating: 5,
                 comment: 'Sarah is an excellent mentor! She explained React concepts clearly and provided great practical examples.',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             },
             {
                 id: 'review_2',
@@ -514,8 +514,8 @@ class SeedData {
                 sessionId: 'session_2',
                 rating: 5,
                 comment: 'Michael\'s product strategy insights were incredibly valuable. He helped me think about markets in a new way.',
-                createdAt: now,
-                updatedAt: now
+                created_at: now,
+                updated_at: now
             }
         ];
 
@@ -535,7 +535,7 @@ class SeedData {
                 message: 'You have a session with Sarah Johnson tomorrow at 2:00 PM',
                 data: JSON.stringify({ sessionId: 'session_3', mentorName: 'Sarah Johnson' }),
                 isRead: 0,
-                createdAt: now
+                created_at: now
             },
             {
                 id: 'notif_2',
@@ -545,7 +545,7 @@ class SeedData {
                 message: 'Alex Thompson has sent you a mentoring request',
                 data: JSON.stringify({ requestId: 'req_1', menteeName: 'Alex Thompson' }),
                 isRead: 0,
-                createdAt: now
+                created_at: now
             },
             {
                 id: 'notif_3',
@@ -555,7 +555,7 @@ class SeedData {
                 message: 'Your session with Jessica Davis has been marked as completed',
                 data: JSON.stringify({ sessionId: 'session_2', menteeName: 'Jessica Davis' }),
                 isRead: 1,
-                createdAt: now
+                created_at: now
             }
         ];
 
@@ -573,7 +573,7 @@ class SeedData {
                 type: 'session_completed',
                 description: 'Completed session: React Fundamentals Discussion',
                 data: JSON.stringify({ sessionId: 'session_1', duration: 60 }),
-                createdAt: now
+                created_at: now
             },
             {
                 id: 'activity_2',
@@ -581,7 +581,7 @@ class SeedData {
                 type: 'session_completed',
                 description: 'Conducted session: React Fundamentals Discussion',
                 data: JSON.stringify({ sessionId: 'session_1', menteeName: 'Alex Thompson' }),
-                createdAt: now
+                created_at: now
             },
             {
                 id: 'activity_3',
@@ -589,7 +589,7 @@ class SeedData {
                 type: 'profile_updated',
                 description: 'Updated profile information',
                 data: JSON.stringify({ fields: ['bio', 'skills'] }),
-                createdAt: now
+                created_at: now
             },
             {
                 id: 'activity_4',
@@ -597,7 +597,7 @@ class SeedData {
                 type: 'session_scheduled',
                 description: 'Scheduled session: Portfolio Review Session',
                 data: JSON.stringify({ sessionId: 'session_3', mentorName: 'Emma Williams' }),
-                createdAt: now
+                created_at: now
             }
         ];
 
@@ -652,9 +652,9 @@ class SeedData {
             console.log('Inserting mentor-mentee relationships...');
             for (const rel of relationships) {
                 await db.run(
-                    `INSERT INTO mentor_mentee_relationships (id, mentorId, menteeId, status, createdAt, updatedAt) 
+                    `INSERT INTO mentor_mentee_relationships (id, mentorId, menteeId, status, created_at, updated_at) 
                      VALUES (?, ?, ?, ?, ?, ?)`,
-                    [rel.id, rel.mentorId, rel.menteeId, rel.status, rel.createdAt, rel.updatedAt]
+                    [rel.id, rel.mentorId, rel.menteeId, rel.status, rel.created_at, rel.updated_at]
                 );
             }
 
@@ -665,7 +665,7 @@ class SeedData {
                     `INSERT INTO mentoring_sessions (
                         id, mentorId, menteeId, title, description, scheduledAt, duration, 
                         amount, status, actualStartTime, actualEndTime, notes, summary, 
-                        cancellationReason, rescheduleReason, paymentStatus, createdAt, updatedAt
+                        cancellationReason, rescheduleReason, paymentStatus, created_at, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         session.id, session.mentorId, session.menteeId, session.title,
@@ -673,7 +673,7 @@ class SeedData {
                         session.status, session.actualStartTime, session.actualEndTime,
                         session.notes, session.summary, session.cancellationReason,
                         session.rescheduleReason, session.paymentStatus,
-                        session.createdAt, session.updatedAt
+                        session.created_at, session.updated_at
                     ]
                 );
             }
@@ -682,9 +682,9 @@ class SeedData {
             console.log('Inserting requests...');
             for (const req of requests) {
                 await db.run(
-                    `INSERT INTO mentoring_requests (id, mentorId, menteeId, message, goals, preferredSchedule, status, createdAt, updatedAt)
+                    `INSERT INTO mentoring_requests (id, mentorId, menteeId, message, goals, preferredSchedule, status, created_at, updated_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [req.id, req.mentorId, req.menteeId, req.message, req.goals, req.preferredSchedule, req.status, req.createdAt, req.updatedAt]
+                    [req.id, req.mentorId, req.menteeId, req.message, req.goals, req.preferredSchedule, req.status, req.created_at, req.updated_at]
                 );
             }
 
@@ -692,9 +692,9 @@ class SeedData {
             console.log('Inserting reviews...');
             for (const review of reviews) {
                 await db.run(
-                    `INSERT INTO reviews (id, mentorId, menteeId, sessionId, rating, comment, createdAt, updatedAt)
+                    `INSERT INTO reviews (id, mentorId, menteeId, sessionId, rating, comment, created_at, updated_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [review.id, review.mentorId, review.menteeId, review.sessionId, review.rating, review.comment, review.createdAt, review.updatedAt]
+                    [review.id, review.mentorId, review.menteeId, review.sessionId, review.rating, review.comment, review.created_at, review.updated_at]
                 );
             }
 
@@ -702,9 +702,9 @@ class SeedData {
             console.log('Inserting notifications...');
             for (const notif of notifications) {
                 await db.run(
-                    `INSERT INTO notifications (id, userId, type, title, message, data, isRead, createdAt)
+                    `INSERT INTO notifications (id, userId, type, title, message, data, isRead, created_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [notif.id, notif.userId, notif.type, notif.title, notif.message, notif.data, notif.isRead, notif.createdAt]
+                    [notif.id, notif.userId, notif.type, notif.title, notif.message, notif.data, notif.isRead, notif.created_at]
                 );
             }
 
@@ -712,9 +712,9 @@ class SeedData {
             console.log('Inserting activity logs...');
             for (const activity of activities) {
                 await db.run(
-                    `INSERT INTO activity_logs (id, userId, type, description, data, createdAt)
+                    `INSERT INTO activity_logs (id, userId, type, description, data, created_at)
                      VALUES (?, ?, ?, ?, ?, ?)`,
-                    [activity.id, activity.userId, activity.type, activity.description, activity.data, activity.createdAt]
+                    [activity.id, activity.userId, activity.type, activity.description, activity.data, activity.created_at]
                 );
             }
 

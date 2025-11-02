@@ -144,7 +144,7 @@ router.post('/request', async (req, res) => {
           subject: req.body.subject || null,
           message: req.body.message || null,
           preferredTime: req.body.preferredTime || null,
-          createdAt: new Date().toISOString(),
+          created_at: new Date().toISOString(),
         };
         const { notifyUser } = require('../realtime');
         notifyUser(io, req.body.mentorId, 'request:new', eventPayload);

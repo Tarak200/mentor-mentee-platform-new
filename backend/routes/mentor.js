@@ -165,9 +165,9 @@ router.put('/sessions/:sessionId', authMiddleware.authenticateToken, requireMent
     try {
         const mentorId = req.user.id;
         const { sessionId } = req.params;
-        const updateData = req.body;
+        const updated_ata = req.body;
 
-        const session = await mentorService.updateSession(mentorId, sessionId, updateData);
+        const session = await mentorService.updateSession(mentorId, sessionId, updated_ata);
         
         if (!session) {
             return res.status(404).json({ error: 'Session not found' });
@@ -377,7 +377,7 @@ router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, re
             return res.status(400).json({ error: 'Only pending requests can be declined' });
         }
 
-        await db.run('UPDATE mentoring_requests SET status = "declined", updatedAt = ? WHERE id = ?', [new Date().toISOString(), requestId]);
+        await db.run('UPDATE mentoring_requests SET status = "declined", updated_at = ? WHERE id = ?', [new Date().toISOString(), requestId]);
 
         // Realtime notify mentee immediately
         try {

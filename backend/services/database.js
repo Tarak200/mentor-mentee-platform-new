@@ -94,8 +94,8 @@ class DatabaseService {
                 cancellationReason TEXT,
                 rescheduleReason TEXT,
                 paymentStatus TEXT DEFAULT 'pending',
-                createdAt TEXT NOT NULL,
-                updatedAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 FOREIGN KEY (mentorId) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (menteeId) REFERENCES users(id) ON DELETE CASCADE
             )`,
@@ -106,8 +106,8 @@ class DatabaseService {
                 mentorId TEXT NOT NULL,
                 menteeId TEXT NOT NULL,
                 status TEXT CHECK(status IN ('active', 'inactive', 'completed')) DEFAULT 'active',
-                createdAt TEXT NOT NULL,
-                updatedAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 UNIQUE(mentorId, menteeId),
                 FOREIGN KEY (mentorId) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (menteeId) REFERENCES users(id) ON DELETE CASCADE
@@ -122,8 +122,8 @@ class DatabaseService {
                 goals TEXT,
                 preferredSchedule TEXT,
                 status TEXT CHECK(status IN ('pending', 'accepted', 'declined', 'cancelled')) DEFAULT 'pending',
-                createdAt TEXT NOT NULL,
-                updatedAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 FOREIGN KEY (mentorId) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (menteeId) REFERENCES users(id) ON DELETE CASCADE
             )`,
@@ -136,8 +136,8 @@ class DatabaseService {
                 sessionId TEXT,
                 rating INTEGER CHECK(rating >= 1 AND rating <= 5) NOT NULL,
                 comment TEXT,
-                createdAt TEXT NOT NULL,
-                updatedAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
                 FOREIGN KEY (mentorId) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (menteeId) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (sessionId) REFERENCES mentoring_sessions(id) ON DELETE SET NULL
@@ -152,7 +152,7 @@ class DatabaseService {
                 message TEXT NOT NULL,
                 data TEXT DEFAULT '{}',
                 isRead INTEGER DEFAULT 0,
-                createdAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
                 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
@@ -163,7 +163,7 @@ class DatabaseService {
                 type TEXT NOT NULL,
                 description TEXT NOT NULL,
                 data TEXT DEFAULT '{}',
-                createdAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
                 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
@@ -177,7 +177,7 @@ class DatabaseService {
                 userAgent TEXT,
                 data TEXT DEFAULT '{}',
                 severity TEXT CHECK(severity IN ('low', 'medium', 'high', 'critical')) DEFAULT 'medium',
-                createdAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
                 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL
             )`,
 
@@ -188,7 +188,7 @@ class DatabaseService {
                 token TEXT NOT NULL,
                 expiresAt TEXT NOT NULL,
                 used INTEGER DEFAULT 0,
-                createdAt TEXT NOT NULL,
+                created_at TEXT NOT NULL,
                 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
             )`
         ];

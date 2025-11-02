@@ -54,7 +54,7 @@ class MenteeService {
 
             let sql = `
                 SELECT u.id, u.firstName, u.lastName, u.avatar, u.email, u.bio, u.skills, u.hourlyRate,
-                       r.status, r.createdAt as relationshipStart,
+                       r.status, r.created_at as relationshipStart,
                        COUNT(s.id) as sessionsCount,
                        MAX(s.scheduledAt) as lastSession,
                        AVG(CASE WHEN rev.rating IS NOT NULL THEN rev.rating ELSE NULL END) as averageRating
@@ -77,7 +77,7 @@ class MenteeService {
                 params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
             }
 
-            sql += ' GROUP BY u.id, r.id ORDER BY r.createdAt DESC LIMIT ? OFFSET ?';
+            sql += ' GROUP BY u.id, r.id ORDER BY r.created_at DESC LIMIT ? OFFSET ?';
             params.push(limit, offset);
 
             const mentors = await db.all(sql, params);
@@ -227,7 +227,7 @@ class MenteeService {
             
             await db.run(
                 `INSERT INTO mentoring_requests 
-                 (id, menteeId, mentorId, message, goals, preferredSchedule, status, createdAt, updatedAt)
+                 (id, menteeId, mentorId, message, goals, preferredSchedule, status, created_at, updated_at)
                  VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
                 [
                     requestId, menteeId, mentorId, message, goals, preferredSchedule,
@@ -263,7 +263,7 @@ class MenteeService {
                 params.push(status);
             }
 
-            sql += ' ORDER BY r.createdAt DESC LIMIT ? OFFSET ?';
+            sql += ' ORDER BY r.created_at DESC LIMIT ? OFFSET ?';
             params.push(limit, offset);
 
             return await db.all(sql, params);
@@ -313,7 +313,7 @@ class MenteeService {
             
             await db.run(
                 `INSERT INTO mentoring_sessions 
-                 (id, mentorId, menteeId, title, description, scheduledAt, duration, amount, status, createdAt, updatedAt)
+                 (id, mentorId, menteeId, title, description, scheduledAt, duration, amount, status, created_at, updated_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'upcoming', ?, ?)`,
                 [
                     sessionId, mentorId, menteeId, title, message,
@@ -406,10 +406,10 @@ class MenteeService {
     async getRecentActivity(menteeId, limit = 10) {
         try {
             return await db.all(
-                `SELECT type, description, createdAt, data 
+                `SELECT type, description, created_at, data 
                  FROM activity_logs 
                  WHERE userId = ? 
-                 ORDER BY createdAt DESC 
+                 ORDER BY created_at DESC 
                  LIMIT ?`,
                 [menteeId, limit]
             );
@@ -436,7 +436,7 @@ class MenteeService {
             }
 
             await db.run(
-                'UPDATE mentoring_requests SET status = "cancelled", updatedAt = ? WHERE id = ?',
+                'UPDATE mentoring_requests SET status = "cancelled", updated_at = ? WHERE id = ?',
                 [new Date().toISOString(), requestId]
             );
 

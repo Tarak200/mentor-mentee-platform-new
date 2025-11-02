@@ -59,8 +59,8 @@ async function run() {
     const hasUsers = await tableExists(db, 'users');
 
     if (hasUsers) {
-      const mentors = await all(db, `SELECT email, firstName, phone, NULL as plainPassword FROM users WHERE role='mentor' ORDER BY createdAt DESC`);
-      const mentees = await all(db, `SELECT email, firstName, phone, NULL as plainPassword FROM users WHERE role='mentee' ORDER BY createdAt DESC`);
+      const mentors = await all(db, `SELECT email, firstName, phone, NULL as plainPassword FROM users WHERE role='mentor' ORDER BY created_at DESC`);
+      const mentees = await all(db, `SELECT email, firstName, phone, NULL as plainPassword FROM users WHERE role='mentee' ORDER BY created_at DESC`);
       printTable('Mentors', mentors);
       printTable('Mentees', mentees);
     } else {
