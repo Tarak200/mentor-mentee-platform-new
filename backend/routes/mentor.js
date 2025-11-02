@@ -17,7 +17,7 @@ router.get('/', authMiddleware.authenticateToken, async (req, res) => {
     try {
         const mentors = await mentorService.getAllMentors(); // returns array of mentor objects
         res.json(mentors);
-        console.log('Fetched mentors:', mentors);
+        // console.log('Fetched mentors:', mentors);
     } catch (err) {
         console.error('Error fetching mentors:', err);
         res.status(500).json({ error: 'Failed to fetch mentors' });

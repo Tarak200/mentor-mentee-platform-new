@@ -233,14 +233,17 @@ class MenteeLogin {
             lastName: formData.get('lastName'),
             age: parseInt(formData.get('age')),
             gender: formData.get('gender'),
-            mobile: formData.get('mobile'),
+            phone: formData.get('phone'),
             email: formData.get('email'),
+            subjects: formData.get('subjects'),
             
             // Education & Learning Goals
             education: formData.get('education'),
             institution: formData.get('institution'),
             currentPursuing: formData.get('currentPursuing'),
             learningGoals: formData.get('learningGoals'),
+            availableHours: formData.get('available_hours'),
+            bio: formData.get('bio'),
             
             // Language & Availability
             languages: languages,

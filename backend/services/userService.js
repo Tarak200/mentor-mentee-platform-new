@@ -10,7 +10,7 @@ class UserService {
                 'SELECT * FROM users WHERE id = ?',
                 [userId]
             );
-            console.log("Fetched user data:", user);
+            // console.log("Fetched user data:", user);
             if (user) {
                 // Parse JSON fields
                 if (user.settings && typeof user.settings === 'string') {

@@ -1779,3 +1779,32 @@ body.mentee-body {
 .modal-content {
   animation: slideUp 0.4s ease;
 }
+
+/* styles of mentor profile in dashboard */
+ 
+.profile-item {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #6366f1;
+}
+
+.profile-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.profile-item label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-item span {
+    color: #1e293b;
+    font-size: 1rem;
+    line-height: 1.5;
+}

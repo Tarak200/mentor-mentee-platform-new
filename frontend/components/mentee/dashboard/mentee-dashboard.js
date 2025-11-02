@@ -141,6 +141,7 @@ async function loadProfile() {
         
         if (response.ok) {
             const user = await response.json();
+            console.log('User profile loaded:', user);
             updateProfileUI(user);
         }
     } catch (error) {
@@ -177,8 +178,8 @@ function updateProfileUI(user) {
                     <span>${user.email}</span>
                 </div>
                 <div class="profile-item">
-                    <label>Age</label>
-                    <span>${user.age || 'Not specified'}</span>
+                    <label>Gender</label>
+                    <span>${user.gender || 'Not specified'}</span>
                 </div>
                 <div class="profile-item">
                     <label>Education</label>
@@ -193,24 +194,24 @@ function updateProfileUI(user) {
                     <span>${user.current_pursuit || 'Not specified'}</span>
                 </div>
                 <div class="profile-item">
+                    <label>Subjects</label>
+                    <span>${user.subjects ? user.subjects.join(', ') : 'Not specified'}</span>
+                </div>
+                <div class="profile-item">
+                    <label>Learning Goals</label>
+                    <span>${user.bio || 'Not specified'}</span>
+                </div>
+                <div class="profile-item">
                     <label>Languages</label>
                     <span>${user.languages ? user.languages.join(', ') : 'Not specified'}</span>
                 </div>
                 <div class="profile-item">
-                    <label>Learning Interests</label>
-                    <span>${user.interests ? user.interests.join(', ') : 'Not specified'}</span>
-                </div>
-                <div class="profile-item">
-                    <label>Budget Range</label>
-                    <span>${user.budget_min ? `₹${user.budget_min}` : 'No min'} - ${user.budget_max ? `₹${user.budget_max}` : 'No max'}</span>
+                    <label>Phone</label>
+                    <span>${user.phone || 'Not specified'}</span>
                 </div>
                 <div class="profile-item">
                     <label>Available Hours</label>
                     <span>${user.available_hours ? user.available_hours.join(', ') : 'Not specified'}</span>
-                </div>
-                <div class="profile-item">
-                    <label>UPI ID</label>
-                    <span>${user.upi_id || 'Not set'}</span>
                 </div>
             </div>
         `;
