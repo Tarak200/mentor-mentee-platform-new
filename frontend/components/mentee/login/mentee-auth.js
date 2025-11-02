@@ -183,7 +183,7 @@ class MenteeLogin {
                 },
                 body: JSON.stringify({
                     ...registrationData,
-                    userType: 'mentee'
+                    role: 'mentee'
                 })
             });
 
