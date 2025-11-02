@@ -60,6 +60,8 @@ class DatabaseService {
                 emailVerified INTEGER DEFAULT 0,
                 available_hours TEXT,
                 phone TEXT,
+                age INTEGER,
+                gender TEXT,
                 rating REAL DEFAULT 0,
                 timezone TEXT DEFAULT 'UTC',
                 settings TEXT DEFAULT '{}',

@@ -5,17 +5,51 @@ class UserService {
     // Get user profile by ID
     async getUserProfile(userId) {
         try {
+            console.log("Fetching profile for user ID:", userId);
             const user = await db.get(
                 'SELECT * FROM users WHERE id = ?',
                 [userId]
             );
-            
+            console.log("Fetched user data:", user);
             if (user) {
                 // Parse JSON fields
-                if (user.expertise) user.expertise = JSON.parse(user.expertise);
-                if (user.availability) user.availability = JSON.parse(user.availability);
-                if (user.interests) user.interests = JSON.parse(user.interests);
-                if (user.paymentMethods) user.paymentMethods = JSON.parse(user.paymentMethods);
+                if (user.settings && typeof user.settings === 'string') {
+                try {
+                    user.settings = JSON.parse(user.settings);
+                } catch (err) {
+                    console.warn("⚠️ Invalid JSON in settings:", err.message);
+                }
+            }
+
+                if (user.available_hours && typeof user.available_hours === 'string') {
+                    try {
+                        user.available_hours = JSON.parse(user.available_hours);
+                    } catch (err) {
+                        console.warn("⚠️ Invalid JSON in available_hours:", err.message);
+                    }
+                }
+
+                // ✅ Convert comma-separated string fields to arrays
+                if (user.languages && typeof user.languages === 'string') {
+                    user.languages = user.languages.split(',').map(lang => lang.trim());
+                }
+
+                if (user.subjects && typeof user.subjects === 'string') {
+                    user.subjects = user.subjects.split(',').map(sub => sub.trim());
+                }
+
+                if (user.qualifications && typeof user.qualifications === 'string') {
+                    user.qualifications = user.qualifications.split(',').map(q => q.trim());
+                }
+
+                // ✅ Keep these consistent for UI rendering (convert single strings to arrays)
+                if (user.current_pursuit && typeof user.current_pursuit === 'string') {
+                    user.current_pursuit = [user.current_pursuit.trim()];
+                }
+
+                if (user.education && typeof user.education === 'string') {
+                    user.education = [user.education.trim()];
+                }
             }
             
             return user;

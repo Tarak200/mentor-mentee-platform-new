@@ -40,6 +40,30 @@ class MentorService {
         }
     }
 
+    //Get mentor details
+    async getMentorDetails(userId) {
+        try {
+            console.log("Fetching mentor of ID:", userId);
+            const user = await db.get(
+                'SELECT * FROM users WHERE id = ?',
+                [userId]
+            );
+            
+            if (user) {
+                // Parse JSON fields
+                if (user.expertise) user.expertise = JSON.parse(user.expertise);
+                if (user.availability) user.availability = JSON.parse(user.availability);
+                if (user.interests) user.interests = JSON.parse(user.interests);
+                if (user.paymentMethods) user.paymentMethods = JSON.parse(user.paymentMethods);
+            }
+            
+            return user;
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            throw new Error('Failed to fetch user profile');
+        }
+    }
+
     // Get all mentors
     async getAllMentors() {
         return new Promise((resolve, reject) => {

@@ -89,6 +89,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// loading profile in mentor dashboard
 async function loadProfile() {
     try {
         const response = await fetch('/api/user/profile', {
@@ -99,6 +100,7 @@ async function loadProfile() {
         
         if (response.ok) {
             const user = await response.json();
+            // console.log("profile details:", user);
             document.getElementById('userName').textContent = user.first_name;
             document.getElementById('userNameShort').textContent = user.first_name;
             document.getElementById('mentorUpiId').textContent = user.upi_id || 'Not set';
@@ -118,10 +120,6 @@ async function loadProfile() {
                     <div class="profile-item">
                         <label>Email</label>
                         <span>${user.email}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Age</label>
-                        <span>${user.age || 'Not specified'}</span>
                     </div>
                     <div class="profile-item">
                         <label>Education</label>
@@ -152,8 +150,12 @@ async function loadProfile() {
                         <span>${user.available_hours ? user.available_hours.join(', ') : 'Not specified'}</span>
                     </div>
                     <div class="profile-item">
-                        <label>Mobile Number</label>
-                        <span>${user.mobile_number || 'Not specified'}</span>
+                        <label>Mobile</label>
+                        <span>${user.phone || 'Not specified'}</span>
+                    </div>
+                    <div class="profile-item">
+                        <label>Gender</label>
+                        <span>${user.gender || 'Not specified'}</span>
                     </div>
                     <div class="profile-item">
                         <label>UPI ID</label>
@@ -576,7 +578,7 @@ async function uploadProfilePic() {
 function logout() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    window.location.href = '/';
+    window.location.href = '/mentor/login';
 }
 
 // Show customer care modal

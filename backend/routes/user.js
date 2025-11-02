@@ -4,54 +4,134 @@ const userService = require('../services/userService');
 const authMiddleware = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-// Get user profile
+// ====================================================
+// 🔹 GET: Fetch user profile
+// ====================================================
 router.get('/profile', authMiddleware.authenticateToken, async (req, res) => {
     try {
-const userId = req.user.userId || req.user.id;
+        const userId = req.user.userId || req.user.id;
         const user = await userService.getUserProfile(userId);
-        
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-
-        // Remove sensitive information
+        console.log("✅ Fetched user profile:", user);
+        // Remove sensitive data (e.g., password, tokens)
         const { password, ...userProfile } = user;
-        res.json(userProfile);
+
+        // Normalize and format data to match frontend usage
+        const normalizedUser = {
+            id: userProfile.id,
+            first_name: userProfile.first_name || userProfile.firstName || '',
+            last_name: userProfile.last_name || userProfile.lastName || '',
+            email: userProfile.email || '',
+            age: userProfile.age || null,
+            gender: userProfile.gender || null,
+            education: userProfile.education || null,
+            institution: userProfile.institution || null,
+            current_pursuit: userProfile.current_pursuit || null,
+            qualifications: userProfile.qualifications || null,
+            hourlyRate: userProfile.hourlyRate || userProfile.hourly_rate || 0,
+            languages: userProfile.languages
+                ? (typeof userProfile.languages === 'string'
+                    ? userProfile.languages.split(',').map(s => s.trim())
+                    : userProfile.languages)
+                : [],
+            subjects: userProfile.subjects
+                ? (typeof userProfile.subjects === 'string'
+                    ? userProfile.subjects.split(',').map(s => s.trim())
+                    : userProfile.subjects)
+                : [],
+            available_hours: userProfile.available_hours
+                ? (typeof userProfile.available_hours === 'string'
+                    ? userProfile.available_hours.split(',').map(s => s.trim())
+                    : userProfile.available_hours)
+                : [],
+            phone: userProfile.phone || null,
+            upi_id: userProfile.upi_id || null,
+            profile_picture: userProfile.profile_picture
+                ? `/uploads/${userProfile.profile_picture}`
+                : '/uploads/default.jpg',
+            rating: userProfile.rating || null,
+            bio: userProfile.bio || null
+        };
+
+        // ✅ Return the normalized profile JSON for the frontend
+        res.json(normalizedUser);
+
     } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('❌ Error fetching user profile:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Update user profile
-router.put('/profile', authMiddleware.authenticateToken, async (req, res) => {
+// ====================================================
+// 🔹 PUT: Update user profile
+// ====================================================
+router.put('/update-profile', authMiddleware.authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
-        const updated_ata = req.body;
+        const userId = req.user.userId || req.user.id;
+        const updated_data = req.body;
 
         // Validate required fields
         const requiredFields = ['firstName', 'lastName', 'email'];
-        const missingFields = requiredFields.filter(field => !updated_ata[field]);
-        
+        const missingFields = requiredFields.filter(field => !updated_data[field]);
+
         if (missingFields.length > 0) {
-            return res.status(400).json({ 
-                error: `Missing required fields: ${missingFields.join(', ')}` 
+            return res.status(400).json({
+                error: `Missing required fields: ${missingFields.join(', ')}`
             });
         }
 
         // Update user profile
-        const updatedUser = await userService.updateUserProfile(userId, updated_ata);
-        
+        const updatedUser = await userService.updateUserProfile(userId, updated_data);
+
         if (!updatedUser) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Remove sensitive information
+        // Remove sensitive fields
         const { password, ...userProfile } = updatedUser;
-        res.json(userProfile);
+
+        // Normalize data for frontend
+        const normalizedUser = {
+            id: userProfile.id,
+            first_name: userProfile.first_name || userProfile.firstName,
+            last_name: userProfile.last_name || userProfile.lastName,
+            email: userProfile.email,
+            age: userProfile.age || null,
+            education: userProfile.education || null,
+            institution: userProfile.institution || null,
+            current_pursuit: userProfile.current_pursuit || null,
+            qualifications: userProfile.qualifications || null,
+            hourlyRate: userProfile.hourlyRate || userProfile.hourly_rate || 0,
+            languages: userProfile.languages
+                ? (typeof userProfile.languages === 'string'
+                    ? userProfile.languages.split(',').map(s => s.trim())
+                    : userProfile.languages)
+                : [],
+            subjects: userProfile.subjects
+                ? (typeof userProfile.subjects === 'string'
+                    ? userProfile.subjects.split(',').map(s => s.trim())
+                    : userProfile.subjects)
+                : [],
+            available_hours: userProfile.available_hours
+                ? (typeof userProfile.available_hours === 'string'
+                    ? userProfile.available_hours.split(',').map(s => s.trim())
+                    : userProfile.available_hours)
+                : [],
+            mobile_number: userProfile.mobile_number || null,
+            upi_id: userProfile.upi_id || null,
+            profile_picture: userProfile.profile_picture
+                ? `/backend/uploads/${userProfile.profile_picture}`
+                : 'backend/uploads/default.jpg',
+            rating: userProfile.rating || null,
+            bio: userProfile.bio || null,
+        };
+
+        res.json(normalizedUser);
     } catch (error) {
-        console.error('Error updating user profile:', error);
-        if (error.message.includes('email already exists')) {
+        console.error('❌ Error updating user profile:', error);
+        if (error.message && error.message.includes('email already exists')) {
             res.status(409).json({ error: 'Email address is already in use' });
         } else {
             res.status(500).json({ error: 'Internal server error' });

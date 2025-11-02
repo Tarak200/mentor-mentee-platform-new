@@ -199,7 +199,26 @@ async function handleRegistration(e) {
                 lastName: registrationData.lastName,
                 email: registrationData.email,
                 password: registrationData.password,
-                role: 'mentor'
+                role: 'mentor',
+                age: registrationData.age,
+                bio: formData.get('qualifications'),
+                gender: formData.get('gender'),
+                mobile: formData.get('mobile'),
+                email: formData.get('email'),
+                
+                // Education & Professional
+                education: formData.get('education'),
+                institution: formData.get('institution'),
+                currentPursuing: formData.get('currentPursuing'),
+                
+                
+                // Language & Availability
+                languages: languages,
+                availability: availability,
+                
+                // Pricing & Payment
+                hourlyRate: parseFloat(formData.get('hourlyRate')),
+                upiId: formData.get('upiId'),
             })
         });
         const result = await response.json();
