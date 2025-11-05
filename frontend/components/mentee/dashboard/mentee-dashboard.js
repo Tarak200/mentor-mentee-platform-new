@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize all components
     await loadProfile();
-    await searchMentors();
+    // await searchMentors();
     await loadSessions();
     await loadPlatformConfig();
     await loadMentors();
@@ -64,7 +64,7 @@ async function loadMentors() {
                 'Content-Type': 'application/json'
             }
         });
-        console.log(response)
+        // console.log(response)
         console.log("📡 Fetch status:", response.status);
 
         if (!response.ok) {
@@ -129,6 +129,7 @@ function setupEventListeners() {
         }
     });
 }
+
 
 // ========================================
 // AUTHENTICATION & USER DATA
@@ -282,6 +283,8 @@ async function searchMentors() {
     const gender = document.getElementById('genderFilter')?.value.trim() || '';
     const language = document.getElementById('languageSearch')?.value.trim() || '';
     
+    console.log('🔍 Searching with filters:', {subject, minPrice, maxPrice, gender, language});
+    
     const params = new URLSearchParams();
     if (subject) params.append('subject', subject);
     if (minPrice) params.append('minPrice', minPrice);
@@ -290,24 +293,42 @@ async function searchMentors() {
     if (language) params.append('language', language);
     
     try {
+        // FIX: If no filters selected, show all cached mentors instead of fetching empty
+        if (params.toString() === '') {
+            console.log('No filters applied - showing all mentors');
+            displayMentors(allMentors);
+            return;
+        }
+        
+        console.log('Fetching with params:', params.toString());
         const response = await fetch(`/api/mentee/find-mentors?${params.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (response.ok) {
             const result = await response.json();
-            allMentors = result.data || result || [];
-            displayMentors(allMentors);
+            console.log('Search result:', result);
+            
+            // FIX: Better response handling
+            const mentors = result.data?.mentors || result.data || result.mentors || result || [];
+            console.log('Found', mentors.length, 'mentors');
+            
+            displayMentors(mentors);
         } else {
+            console.error('Search failed with status:', response.status);
             showMessage('Error loading mentors', 'error');
+            displayMentors(allMentors); // Fallback to cached mentors
         }
     } catch (error) {
         console.error('Error searching mentors:', error);
         showMessage('Error searching mentors', 'error');
+        displayMentors(allMentors); // Fallback to cached mentors
     }
 }
 
 function clearFilters() {
+    console.log('🧹 Clearing filters');
+    
     const subjectInput = document.getElementById('subjectSearch');
     const minPriceInput = document.getElementById('minPrice');
     const maxPriceInput = document.getElementById('maxPrice');
@@ -320,9 +341,21 @@ function clearFilters() {
     if (genderSelect) genderSelect.value = '';
     if (languageInput) languageInput.value = '';
     
-    searchMentors();
+    // FIX: Just display cached mentors instead of searching
+    console.log('Showing all mentors after clear');
+    displayMentors(allMentors);
 }
 
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Page loaded - setting up...');
+    
+    // Setup event listeners first
+    setupEventListeners();
+    
+    // Then load mentors
+    await loadMentors();
+});
 // Global variable to track if handler is already attached
 let isFormHandlerAttached = false;
 
@@ -353,13 +386,14 @@ function displayMentors(mentors) {
 
     // Generate mentor cards
     mentorsGrid.innerHTML = mentors.map(mentor => {
-        const mentorName = `${mentor.first_name || ''} ${mentor.last_name || ''}`;
+        // console.log("Rendering mentor:", mentor.firstName, mentor.lastName);
+        const mentorName = `${mentor.firstName || ''} ${mentor.lastName || ''}`;
         const safeMentorName = mentorName.replace(/'/g, "\\'");
 
         return `
         <div class="mentor-card enhanced" data-mentor-id="${mentor.id}" data-mentor-name="${safeMentorName}">
             <div class="mentor-header">
-                <img src="${mentor.profile_picture || 'backend/uploads/default.jpg'}" alt="${mentor.first_name}">
+                <img src="${mentor.profile_picture || 'backend/uploads/default.jpg'}" alt="${mentor.firstName}" onerror="this.src='backend/uploads/default.jpg'">
                 <div class="mentor-basic">
                     <h3>${mentorName}</h3>
                     <div class="mentor-rating">
@@ -1080,7 +1114,7 @@ let currentFilter = 'upcoming';
 
 async function loadSessions() {
     try {
-        console.log("Loading sessions from API...");
+        // console.log("Loading sessions from API...");
         const response = await fetch('/api/mentee/sessions', {
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -1088,18 +1122,18 @@ async function loadSessions() {
             }
         });
         
-        console.log("Response status:", response.status);
+        // console.log("Response status:", response.status);
         
         if (response.ok) {
             const result = await response.json();
-            console.log("Data from loadSessions:", result);
+            // console.log("Data from loadSessions:", result);
             
             // Extract the sessions array
             allSessions = result.data.sessions || [];
             
-            console.log("Sessions fetched successfully.");
-            console.log("All sessions loaded:", allSessions);
-            console.log("Number of sessions:", allSessions.length);
+            // console.log("Sessions fetched successfully.");
+            // console.log("All sessions loaded:", allSessions);
+            // console.log("Number of sessions:", allSessions.length);
             
             const now = new Date();
             
@@ -1111,7 +1145,7 @@ async function loadSessions() {
                     return sessionDate > now && s.status !== 'completed';
                 }).length;
                 upcomingSessionsEl.textContent = upcomingCount;
-                console.log("✅ Upcoming sessions count:", upcomingCount);
+                // console.log("✅ Upcoming sessions count:", upcomingCount);
             }
             
             // ✅ Update COMPLETED sessions counter
@@ -1122,7 +1156,7 @@ async function loadSessions() {
                     return sessionDate <= now || s.status === 'completed';
                 }).length;
                 completedSessionsEl.textContent = completedCount;
-                console.log("✅ Completed sessions count:", completedCount);
+                // console.log("✅ Completed sessions count:", completedCount);
             }
             
             // ✅ Update CONNECTED MENTORS counter (unique mentors)
@@ -1132,8 +1166,8 @@ async function loadSessions() {
                 const uniqueMentorIds = [...new Set(allSessions.map(s => s.mentor_id))];
                 const connectedMentorsCount = uniqueMentorIds.length;
                 connectedMentorsEl.textContent = connectedMentorsCount;
-                console.log("✅ Connected mentors count:", connectedMentorsCount);
-                console.log("Unique mentor IDs:", uniqueMentorIds);
+                // console.log("✅ Connected mentors count:", connectedMentorsCount);
+                // console.log("Unique mentor IDs:", uniqueMentorIds);
             }
             
             // ✅ Update TOTAL SPENT (sum of all session amounts)
@@ -1143,7 +1177,7 @@ async function loadSessions() {
                     return sum + (parseFloat(session.amount) || 0);
                 }, 0);
                 totalSpentEl.textContent = `₹${totalSpent.toFixed(0)}`;
-                console.log("✅ Total spent:", totalSpent);
+                // console.log("✅ Total spent:", totalSpent);
             }
             
             // Show the section
@@ -1216,9 +1250,9 @@ function renderSessions(filterType = 'upcoming') {
         return;
     }
     
-    console.log("=== renderSessions Debug ===");
-    console.log("Filter type:", filterType);
-    console.log("Total sessions:", allSessions.length);
+    // console.log("=== renderSessions Debug ===");
+    // console.log("Filter type:", filterType);
+    // console.log("Total sessions:", allSessions.length);
     
     // Filter sessions based on type
     const now = new Date();
@@ -1238,7 +1272,7 @@ function renderSessions(filterType = 'upcoming') {
         filteredSessions = allSessions;
     }
     
-    console.log("Filtered sessions:", filteredSessions.length);
+    // console.log("Filtered sessions:", filteredSessions.length);
     
     // Sort by date
     filteredSessions.sort((a, b) => {
