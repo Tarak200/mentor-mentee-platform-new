@@ -141,7 +141,7 @@ async function loadProfile() {
         
         if (response.ok) {
             const user = await response.json();
-            console.log('User profile loaded:', user);
+            // console.log('User profile loaded:', user);
             updateProfileUI(user);
         }
     } catch (error) {
@@ -359,7 +359,7 @@ function displayMentors(mentors) {
         return `
         <div class="mentor-card enhanced" data-mentor-id="${mentor.id}" data-mentor-name="${safeMentorName}">
             <div class="mentor-header">
-                <img src="${mentor.profile_picture || '/uploads/avatars/default-avatar.png'}" alt="${mentor.first_name}">
+                <img src="${mentor.profile_picture || 'backend/uploads/default.jpg'}" alt="${mentor.first_name}">
                 <div class="mentor-basic">
                     <h3>${mentorName}</h3>
                     <div class="mentor-rating">
@@ -468,7 +468,7 @@ function connectWithMentor(mentorId, mentorName) {
     if (preview) {
         preview.innerHTML = `
             <div class="mentor-preview-card">
-                <img src="${mentor.profile_picture || '/uploads/avatars/default-avatar.png'}" alt="${mentorName}">
+                <img src="${mentor.profile_picture || 'backend/uploads/avatars/default.jpg'}" alt="${mentorName}">
                 <div>
                     <h4>${mentorName}</h4>
                     <p>₹${mentor.hourlyRate || 0}/hour</p>
@@ -983,7 +983,7 @@ async function viewMentorProfile(mentorId) {
     }
 
     const data = await response.json().catch(() => null);
-    console.log('Fetched mentor profile data:', data);
+    // console.log('Fetched mentor profile data:', data);
 
     if (!data || !data.success || !data.mentor) {
       const reason = data && data.message ? data.message : 'No mentor data returned.';
@@ -997,7 +997,7 @@ async function viewMentorProfile(mentorId) {
     // ---- BUILD UI ----
     const profileHTML = `
       <div class="mentor-profile">
-        <img src="${mentor.profile_picture || '/uploads/default-avatar.png'}" 
+        <img src="${mentor.profile_picture || 'backend/uploads/default.jpg'}" 
              alt="${mentor.first_name || ''} ${mentor.last_name || ''}">
         <h2>${mentor.first_name || ''} ${mentor.last_name || ''}</h2>
 
@@ -1074,97 +1074,284 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========================================
 // SESSIONS MANAGEMENT
 // ========================================
+// Store sessions globally so we can filter them
+let allSessions = [];
+let currentFilter = 'upcoming';
+
 async function loadSessions() {
     try {
+        console.log("Loading sessions from API...");
         const response = await fetch('/api/mentee/sessions', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
         
+        console.log("Response status:", response.status);
+        
         if (response.ok) {
-            const sessions = await response.json();
-            const upcomingSessionsEl = document.getElementById('upcomingSessions');
-            if (upcomingSessionsEl) upcomingSessionsEl.textContent = sessions.length;
+            const result = await response.json();
+            console.log("Data from loadSessions:", result);
             
-            renderSessions(sessions);
+            // Extract the sessions array
+            allSessions = result.data.sessions || [];
+            
+            console.log("Sessions fetched successfully.");
+            console.log("All sessions loaded:", allSessions);
+            console.log("Number of sessions:", allSessions.length);
+            
+            const now = new Date();
+            
+            // ✅ Update UPCOMING sessions counter
+            const upcomingSessionsEl = document.getElementById('upcomingSessions');
+            if (upcomingSessionsEl) {
+                const upcomingCount = allSessions.filter(s => {
+                    const sessionDate = new Date(s.scheduled_time);
+                    return sessionDate > now && s.status !== 'completed';
+                }).length;
+                upcomingSessionsEl.textContent = upcomingCount;
+                console.log("✅ Upcoming sessions count:", upcomingCount);
+            }
+            
+            // ✅ Update COMPLETED sessions counter
+            const completedSessionsEl = document.getElementById('completedSessions');
+            if (completedSessionsEl) {
+                const completedCount = allSessions.filter(s => {
+                    const sessionDate = new Date(s.scheduled_time);
+                    return sessionDate <= now || s.status === 'completed';
+                }).length;
+                completedSessionsEl.textContent = completedCount;
+                console.log("✅ Completed sessions count:", completedCount);
+            }
+            
+            // ✅ Update CONNECTED MENTORS counter (unique mentors)
+            const connectedMentorsEl = document.getElementById('connectedMentors');
+            if (connectedMentorsEl) {
+                // Get unique mentor IDs
+                const uniqueMentorIds = [...new Set(allSessions.map(s => s.mentor_id))];
+                const connectedMentorsCount = uniqueMentorIds.length;
+                connectedMentorsEl.textContent = connectedMentorsCount;
+                console.log("✅ Connected mentors count:", connectedMentorsCount);
+                console.log("Unique mentor IDs:", uniqueMentorIds);
+            }
+            
+            // ✅ Update TOTAL SPENT (sum of all session amounts)
+            const totalSpentEl = document.getElementById('totalSpent');
+            if (totalSpentEl) {
+                const totalSpent = allSessions.reduce((sum, session) => {
+                    return sum + (parseFloat(session.amount) || 0);
+                }, 0);
+                totalSpentEl.textContent = `₹${totalSpent.toFixed(0)}`;
+                console.log("✅ Total spent:", totalSpent);
+            }
+            
+            // Show the section
+            const sessionsSection = document.getElementById('sessionsSection');
+            if (sessionsSection) {
+                sessionsSection.style.display = 'block';
+            }
+            
+            // Render sessions
+            showSessionType('upcoming');
+            
+            console.log("✅ All session statistics updated successfully!");
+            
+        } else {
+            const errorText = await response.text();
+            console.error("Response not OK:", response.status, errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
+        
     } catch (error) {
         console.error('Error loading sessions:', error);
+        
+        // Show section even on error
+        const sessionsSection = document.getElementById('sessionsSection');
+        if (sessionsSection) {
+            sessionsSection.style.display = 'block';
+        }
+        
+        const sessionsList = document.getElementById('sessionsList');
+        if (sessionsList) {
+            sessionsList.innerHTML = `
+                <div class="error-sessions">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Error loading sessions</h3>
+                    <p>${error.message || 'Please try again later.'}</p>
+                    <button onclick="loadSessions()" class="btn">Retry</button>
+                </div>
+            `;
+        }
     }
 }
 
-function renderSessions(sessions) {
-    const sessionsList = document.getElementById('sessionsList');
-    if (!sessionsList) return;
+
+function showSessionType(type, event) {
+    // Update tabs
+    document.querySelectorAll('.session-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
     
-    if (sessions.length === 0) {
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // Highlight the correct default tab
+        const tabs = document.querySelectorAll('.session-tab');
+        tabs.forEach(tab => {
+            if (tab.textContent.toLowerCase().includes(type)) {
+                tab.classList.add('active');
+            }
+        });
+    }
+    
+    currentFilter = type;
+    renderSessions(type);
+}
+
+function renderSessions(filterType = 'upcoming') {
+    const sessionsList = document.getElementById('sessionsList');
+    if (!sessionsList) {
+        console.error("sessionsList element not found!");
+        return;
+    }
+    
+    console.log("=== renderSessions Debug ===");
+    console.log("Filter type:", filterType);
+    console.log("Total sessions:", allSessions.length);
+    
+    // Filter sessions based on type
+    const now = new Date();
+    let filteredSessions;
+    
+    if (filterType === 'upcoming') {
+        filteredSessions = allSessions.filter(session => {
+            const sessionDate = new Date(session.scheduled_time);
+            return sessionDate > now && session.status !== 'completed';
+        });
+    } else if (filterType === 'completed') {
+        filteredSessions = allSessions.filter(session => {
+            const sessionDate = new Date(session.scheduled_time);
+            return sessionDate <= now || session.status === 'completed';
+        });
+    } else {
+        filteredSessions = allSessions;
+    }
+    
+    console.log("Filtered sessions:", filteredSessions.length);
+    
+    // Sort by date
+    filteredSessions.sort((a, b) => {
+        const dateA = new Date(a.scheduled_time);
+        const dateB = new Date(b.scheduled_time);
+        return filterType === 'upcoming' ? dateA - dateB : dateB - dateA;
+    });
+    
+    if (filteredSessions.length === 0) {
         sessionsList.innerHTML = `
             <div class="no-sessions">
                 <i class="fas fa-calendar-times"></i>
-                <h3>No sessions scheduled</h3>
-                <p>Connect with mentors to start learning!</p>
+                <h3>No ${filterType} sessions</h3>
+                <p>${filterType === 'upcoming' ? 'Connect with mentors to start learning!' : 'You haven\'t completed any sessions yet.'}</p>
             </div>
         `;
         return;
     }
     
-    sessionsList.innerHTML = sessions.map(session => `
-        <div class="session-card mentee-session">
-            <div class="session-header">
-                <div class="session-mentor">
-                    <h4><i class="fas fa-chalkboard-teacher"></i> ${session.mentor_first_name} ${session.mentor_last_name}</h4>
-                    <span class="session-subject">${session.subject}</span>
+    sessionsList.innerHTML = filteredSessions.map(session => {
+        const sessionDate = new Date(session.scheduled_time);
+        const isUpcoming = sessionDate > now && session.status !== 'completed';
+        
+        const mentorName = `${session.mentor_first_name || ''} ${session.mentor_last_name || ''}`.trim();
+        const subject = session.subject || session.title || 'Session';
+        
+        // Generate mentor initials for avatar fallback
+        const initials = mentorName
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+        
+        return `
+            <div class="session-card mentee-session ${isUpcoming ? '' : 'completed'}">
+                <div class="session-header">
+                    <div class="session-mentor">
+                        <!-- Mentor Avatar -->
+                        <div class="mentor-avatar">
+                            ${session.profilePic ? 
+                                `<img src="${session.profilePic}" alt="${mentorName}" class="mentor-img">` :
+                                `<div class="mentor-initials">${initials}</div>`
+                            }
+                            <div class="mentor-status ${isUpcoming ? 'active' : 'completed'}"></div>
+                        </div>
+                        
+                        <!-- Mentor Info -->
+                        <div class="mentor-info">
+                            <h4><i class="fas fa-chalkboard-teacher"></i> ${mentorName}</h4>
+                            <span class="session-subject">${subject}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="session-status ${session.payment_status}">
+                        ${session.payment_status === 'paid' ? '✅ Paid' : '⚠️ Payment Pending'}
+                    </div>
                 </div>
-                <div class="session-status ${session.payment_status}">
-                    ${session.payment_status === 'paid' ? '✅ Paid' : '⚠️ Payment Pending'}
+                
+                ${session.title ? `
+                    <div class="session-title">
+                        <h5><i class="fas fa-bookmark"></i> ${session.title}</h5>
+                    </div>
+                ` : ''}
+                
+                ${session.description ? `
+                    <div class="session-description">
+                        <p><i class="fas fa-info-circle"></i> ${session.description}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="session-details">
+                    <div class="session-info">
+                        <i class="fas fa-calendar"></i>
+                        <span>${sessionDate.toLocaleDateString()}</span>
+                    </div>
+                    <div class="session-info">
+                        <i class="fas fa-clock"></i>
+                        <span>${sessionDate.toLocaleTimeString()}</span>
+                    </div>
+                    <div class="session-info">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>${session.duration || 60} mins</span>
+                    </div>
+                    <div class="session-info">
+                        <i class="fas fa-rupee-sign"></i>
+                        <span>₹${session.amount}</span>
+                    </div>
                 </div>
+                
+                ${session.meeting_link && isUpcoming ? `
+                    <div class="session-link">
+                        <a href="${session.meeting_link}" target="_blank" class="btn btn-join">
+                            <i class="fas fa-video"></i> Join Meeting
+                        </a>
+                    </div>
+                ` : ''}
+                
+                ${session.payment_status === 'pending' && isUpcoming ? `
+                    <div class="payment-required">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <strong>Payment Required:</strong> Pay ₹${session.amount} to <code class="platform-upi">platform@upi</code> to confirm this session.
+                        <button onclick="copyUpiId()" class="btn btn-copy-upi">
+                            <i class="fas fa-copy"></i> Copy UPI ID
+                        </button>
+                    </div>
+                ` : ''}
             </div>
-            
-            <div class="session-details">
-                <div class="session-info">
-                    <i class="fas fa-calendar"></i>
-                    <span>${new Date(session.scheduled_time).toLocaleDateString()}</span>
-                </div>
-                <div class="session-info">
-                    <i class="fas fa-clock"></i>
-                    <span>${new Date(session.scheduled_time).toLocaleTimeString()}</span>
-                </div>
-                <div class="session-info">
-                    <i class="fas fa-rupee-sign"></i>
-                    <span>₹${session.amount}</span>
-                </div>
-            </div>
-            
-            ${session.meeting_link ? `
-                <div class="session-link">
-                    <a href="${session.meeting_link}" target="_blank" class="btn btn-join">
-                        <i class="fas fa-video"></i> Join Meeting
-                    </a>
-                </div>
-            ` : ''}
-            
-            ${session.payment_status === 'pending' ? `
-                <div class="payment-required">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <strong>Payment Required:</strong> Pay ₹${session.amount} to <code class="platform-upi">platform@upi</code> to confirm this session.
-                    <button onclick="copyUpiId()" class="btn btn-copy-upi">
-                        <i class="fas fa-copy"></i> Copy UPI ID
-                    </button>
-                </div>
-            ` : ''}
-        </div>
-    `).join('');
+        `;
+    }).join('');    
+    console.log("Rendering complete");
 }
 
-function showSessionType(type) {
-    // Update tabs
-    document.querySelectorAll('.session-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // This would filter sessions by type - implement as needed
-    console.log('Show sessions of type:', type);
-}
 
 // ========================================
 // UI NAVIGATION & MODALS
@@ -1185,14 +1372,6 @@ function toggleProfileMenu() {
     }
 }
 
-// function closeConnectModal() {
-//     const modal = document.getElementById('connectModal');
-//     if (modal) modal.style.display = 'none';
-    
-//     // currentMentorId = null;
-//     const connectForm = document.getElementById('connectForm');
-//     if (connectForm) connectForm.reset();
-// }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);

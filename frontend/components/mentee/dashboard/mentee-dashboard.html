@@ -175,10 +175,11 @@
                     <p>Track your upcoming and completed sessions</p>
                 </div>
 
-                <div class="sessions-tabs">
-                    <button class="session-tab active" onclick="showSessionType('upcoming')">Upcoming</button>
-                    <button class="session-tab" onclick="showSessionType('completed')">Completed</button>
-                </div>
+            <div class="sessions-tabs">
+                <button class="session-tab active" onclick="showSessionType('upcoming', event)">Upcoming</button>
+                <button class="session-tab" onclick="showSessionType('completed', event)">Completed</button>
+                <!-- render session tabs dynamically -->
+            </div>
 
                 <div id="sessionsList" class="sessions-list">
                     <div class="loading-sessions">
@@ -236,7 +237,7 @@
                 <div class="profile-content">
                     <div class="profile-card">
                         <div class="profile-picture-section">
-                            <img id="profilePicLarge" src="/uploads/default-avatar.png" alt="Profile Picture">
+                            <img id="profilePicLarge" src="backend/uploads/default.jpg" alt="Profile Picture">
                             <div class="profile-upload">
                                 <input type="file" id="profilePicUpload" accept="image/*" hidden>
                                 <button onclick="document.getElementById('profilePicUpload').click()" class="btn btn-upload">

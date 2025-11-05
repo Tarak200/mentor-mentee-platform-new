@@ -96,51 +96,185 @@ class MenteeService {
     }
 
     // Get mentee's sessions
+    // In your menteeService.js file
     async getSessions(menteeId, options = {}) {
+        // console.log("=== Entered getSessions function ===");
         try {
+            // console.log("=== getSessions called ===");
+            // console.log("menteeId:", menteeId);
+            // console.log("options:", options);
+            
             const { status, mentorId, dateFrom, dateTo, page = 1, limit = 20 } = options;
-            const offset = (page - 1) * limit;
 
-            let sql = `
-                SELECT s.*, u.firstName, u.lastName,
-                       u.firstName || ' ' || u.lastName as mentorName,
-                       u.avatar as mentorAvatar
+            // Base query
+            let query = `
+                SELECT 
+                    s.id,
+                    s.mentorId AS mentor_id,
+                    s.menteeId AS mentee_id,
+                    s.title,
+                    s.description,
+                    s.scheduledAt AS scheduled_time,
+                    s.duration,
+                    s.amount,
+                    s.paymentStatus AS payment_status,
+                    s.status,
+                    s.created_at,
+                    u.firstName AS mentor_first_name,
+                    u.lastName AS mentor_last_name,
+                    u.subjects AS subject,
+                    u.profile_picture as profilePic
                 FROM mentoring_sessions s
                 JOIN users u ON s.mentorId = u.id
                 WHERE s.menteeId = ?
             `;
-            
-            const params = [menteeId];
 
+            const params = [menteeId];
+            
+            // Apply optional filters
             if (status) {
-                sql += ' AND s.status = ?';
+                // console.log("Adding status filter:", status);
+                query += ` AND s.status = ?`;
                 params.push(status);
             }
-
             if (mentorId) {
-                sql += ' AND s.mentorId = ?';
+                // console.log("Adding mentorId filter:", mentorId);
+                query += ` AND s.mentorId = ?`;
                 params.push(mentorId);
             }
-
             if (dateFrom) {
-                sql += ' AND s.scheduledAt >= ?';
+                // console.log("Adding dateFrom filter:", dateFrom);
+                query += ` AND s.scheduledAt >= ?`;
                 params.push(dateFrom);
             }
-
             if (dateTo) {
-                sql += ' AND s.scheduledAt <= ?';
+                // console.log("Adding dateTo filter:", dateTo);
+                query += ` AND s.scheduledAt <= ?`;
                 params.push(dateTo);
             }
 
-            sql += ' ORDER BY s.scheduledAt DESC LIMIT ? OFFSET ?';
+            // Ordering and pagination
+            query += ` ORDER BY s.scheduledAt DESC`;
+            const offset = (page - 1) * limit;
+            query += ` LIMIT ? OFFSET ?`;
             params.push(limit, offset);
 
-            return await db.all(sql, params);
+            // console.log("=== Final Query ===");
+            // console.log("Query:", query);
+            // console.log("Params:", params);
+
+            // Execute session query
+            // console.log("Executing session query...");
+            const sessions = await db.all(query, params);
+            // console.log("Sessions returned:", sessions.length);
+            // console.log("First session (if any):", sessions[0] || "No sessions found");
+
+            // Count query for pagination
+            let countQuery = `
+                SELECT COUNT(*) AS total
+                FROM mentoring_sessions s
+                WHERE s.menteeId = ?
+            `;
+            const countParams = [menteeId];
+
+            if (status) {
+                countQuery += ` AND s.status = ?`;
+                countParams.push(status);
+            }
+            if (mentorId) {
+                countQuery += ` AND s.mentorId = ?`;
+                countParams.push(mentorId);
+            }
+            if (dateFrom) {
+                countQuery += ` AND s.scheduledAt >= ?`;
+                countParams.push(dateFrom);
+            }
+            if (dateTo) {
+                countQuery += ` AND s.scheduledAt <= ?`;
+                countParams.push(dateTo);
+            }
+
+            // console.log("=== Count Query ===");
+            // console.log("Count Query:", countQuery);
+            // console.log("Count Params:", countParams);
+
+            const countResult = await db.get(countQuery, countParams);
+            // console.log("Count Result:", countResult);
+            
+            const total = countResult ? countResult.total : 0;
+            // console.log("Total sessions found:", total);
+            
+            const result = {
+                sessions,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                },
+            };
+            
+            // console.log("=== Returning Result ===");
+            // console.log("Result structure:", result);
+            
+            return result;
+            
         } catch (error) {
-            console.error('Error fetching sessions:', error);
-            throw new Error('Failed to fetch sessions');
+            console.error('=== ERROR in getSessions ===');
+            // console.error('Error message:', error.message);
+            // console.error('Error stack:', error.stack);
+            // console.error('Error object:', error);
+            throw new Error('Failed to fetch sessions: ' + error.message);
         }
     }
+
+    // Placeholder for the booking function
+    async bookSession(sessionData) {
+        try {
+            const {
+                mentorId,
+                menteeId,
+                scheduledAt,
+                duration,
+                amount,
+                paymentStatus = 'pending',
+                meetingLink = null,
+                status = 'scheduled'
+            } = sessionData;
+
+            const query = `
+                INSERT INTO mentoring_sessions (
+                    mentorId,
+                    menteeId,
+                    scheduledAt,
+                    duration,
+                    amount,
+                    paymentStatus,
+                    meeting_link,
+                    status,
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            `;
+
+            const params = [
+                mentorId,
+                menteeId,
+                scheduledAt,
+                duration,
+                amount,
+                paymentStatus,
+                meetingLink,
+                status
+            ];
+
+            const result = await db.run(query, params);
+            return { message: 'Session booked successfully', sessionId: result.lastID };
+        } catch (error) {
+            console.error('Error booking session:', error);
+            throw new Error('Failed to book session: ' + error.message);
+        }
+    }
+
 
     // Find mentors
     async findMentors(menteeId, options = {}) {

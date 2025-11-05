@@ -14,7 +14,7 @@ router.get('/profile', authMiddleware.authenticateToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        console.log("✅ Fetched user profile:", user);
+        // console.log("✅ Fetched user profile:", user);
         // Remove sensitive data (e.g., password, tokens)
         const { password, ...userProfile } = user;
 

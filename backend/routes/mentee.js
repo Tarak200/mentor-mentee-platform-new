@@ -86,9 +86,11 @@ router.get('/sessions', async (req, res) => {
     const data = await menteeService.getSessions(req.user.userId || req.user.id, {
       status, mentorId, dateFrom, dateTo,
       page: Number(page)||1,
-      limit: Number(limit)||20
+      limit: Number(limit)||20,
     });
+
     res.json({ success: true, data });
+    // console.log("Sessions data:", data);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message || 'Failed to fetch sessions' });
   }
