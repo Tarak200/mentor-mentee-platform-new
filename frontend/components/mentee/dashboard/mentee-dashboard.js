@@ -1194,10 +1194,10 @@ async function loadSessions() {
             }
             
             // Show the section
-            const sessionsSection = document.getElementById('sessionsSection');
-            if (sessionsSection) {
-                sessionsSection.style.display = 'block';
-            }
+            // const sessionsSection = document.getElementById('sessionsSection');
+            // if (sessionsSection) {
+            //     sessionsSection.style.display = 'block';
+            // }
             
             // Render sessions
             showSessionType('upcoming');

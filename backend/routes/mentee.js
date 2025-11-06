@@ -32,51 +32,60 @@ router.get('/mentors', async (req, res) => {
 // GET /api/mentee/find-mentors
 router.get('/find-mentors', async (req, res) => {
   try {
-    // FIX #1: Use correct parameter names from frontend
     const { subject, language, minPrice, maxPrice, gender, page, limit } = req.query;
-    
-    // Convert to format expected by service
+
     const skillList = subject ? [subject] : [];
-    
+      // ✅ Normalize filters before passing to DB
+    const normalizedGender = gender ? gender.trim().toLowerCase() : undefined;
+    const normalizedLanguage = language ? language.trim().toLowerCase() : undefined;
+
+    // ✅ Use default price bounds to avoid undefined issues
+    const minPriceValue = minPrice ? Number(minPrice) : 0;
+    const maxPriceValue = maxPrice ? Number(maxPrice) : 1e6; // effectively "no upper limit"
+
     const data = await menteeService.findMentors(req.user.userId || req.user.id, {
       skills: skillList,
       minRating: undefined,
-      maxRate: maxPrice ? Number(maxPrice) : undefined,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      gender: gender,
-      language: language,
+      minPrice: minPriceValue,
+      maxRate: maxPriceValue,
+      gender: normalizedGender,
+      language: normalizedLanguage,
       page: Number(page) || 1,
-      limit: Number(limit) || 12
+      limit: Number(limit) || 12,
+      subject : subject || undefined
     });
 
-    // FIX #2: Normalize to camelCase for frontend (as it now expects)
-    const normalized = (Array.isArray(data) ? data : []).map(m => {
-      const firstName = m.firstName ?? m.first_name ?? '';
-      const lastName = m.lastName ?? m.last_name ?? '';
-      const profilePicture = m.avatar ?? m.profile_picture ?? 'backend/uploads/default.jpg';
-      const hourlyRate = m.hourlyRate ?? null;
-      const rating = Number(m.averageRating ?? m.rating ?? 4);
-      const totalSessions = m.menteeCount ?? m.total_sessions ?? 0;
-      const languages = Array.isArray(m.languages) ? m.languages : [];
-      const subjects = Array.isArray(m.skills) ? m.skills : (typeof m.skills === 'string' ? m.skills.split(',').filter(Boolean) : []);
-      const availableHours = Array.isArray(m.available_hours) ? m.available_hours : [];
-
-      return {
-        ...m,
-        firstName,           // ← camelCase (what frontend expects)
-        lastName,
-        profile_picture: profilePicture,
-        hourlyRate,
-        rating,
-        total_sessions: totalSessions,
-        languages,
-        subjects,
-        available_hours: availableHours,
-        education: m.education ?? '',
-        institution: m.institution ?? '',
-        current_pursuit: m.current_pursuit ?? ''
-      };
-    });
+    const normalized = (Array.isArray(data) ? data : []).map(row => ({
+      id: row.id || row.mentorId || row.userId,
+      firstName: row.firstName ?? row.first_name ?? '',
+      lastName: row.lastName ?? row.last_name ?? '',
+      education: row.education ?? '',
+      institution: row.institution ?? '',
+      rating: Number(row.rating ?? row.averageRating ?? 0),
+      profile_picture: row.profile_picture ?? row.avatar ?? 'backend/uploads/default.jpg',
+      qualifications: row.qualifications ?? '',
+      bio: row.bio ?? '',
+      total_sessions: row.total_sessions ?? row.menteeCount ?? 0,
+      current_pursuit: row.current_pursuit ?? '',
+      languages: Array.isArray(row.languages)
+        ? row.languages
+        : typeof row.languages === 'string'
+          ? row.languages.split(',').filter(Boolean)
+          : [],
+      subjects: Array.isArray(row.subjects)
+        ? row.subjects
+        : Array.isArray(row.skills)
+          ? row.skills
+          : typeof row.skills === 'string'
+            ? row.skills.split(',').filter(Boolean)
+            : [],
+      available_hours: Array.isArray(row.available_hours)
+        ? row.available_hours
+        : typeof row.available_hours === 'string'
+          ? row.available_hours.split(',').filter(Boolean)
+          : [],
+      hourlyRate: row.hourlyRate ?? row.hourly_rate ?? null
+    }));
 
     res.json({ success: true, data: normalized });
   } catch (err) {
