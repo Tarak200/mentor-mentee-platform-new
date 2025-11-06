@@ -64,36 +64,6 @@ class MentorService {
         }
     }
 
-    // Get all mentors
-    async getAllMentors() {
-        return new Promise((resolve, reject) => {
-            console.log("📊 Starting getAllMentors query...");
-            
-            const query = `SELECT u.id, u.firstName AS first_name, u.lastName AS last_name, u.education, u.institution, u.current_pursuit, u.languages, u.subjects, u.qualifications, u.bio, u.profile_picture, u.hourlyRate AS hourly_rate, u.rating, u.available_hours, COUNT(ms.id) AS total_sessions FROM users u LEFT JOIN mentoring_sessions ms ON u.id = ms.mentorId AND ms.status = 'completed' WHERE u.role = 'mentor' GROUP BY u.id, u.firstName, u.lastName, u.education, u.institution, u.current_pursuit, u.languages, u.subjects, u.qualifications, u.bio, u.profile_picture, u.hourlyRate, u.rating, u.available_hours;`;
-            
-            db.all(query, [], (err, rows) => {
-                console.log("✅ DB callback triggered");
-                
-                if (err) {
-                    console.error("❌ Error fetching mentors from DB:", err);
-                    return reject(err);
-                }
-                
-                console.log(`✅ Found ${rows?.length || 0} mentors`);
-                
-                const mentors = rows.map(row => ({
-                    ...row,
-                    languages: row.languages ? JSON.parse(row.languages) : [],
-                    subjects: row.subjects ? JSON.parse(row.subjects) : [],
-                    available_hours: row.available_hours ? JSON.parse(row.available_hours) : []
-                }));
-                
-                resolve(mentors);
-            });
-
-        });
-
-    }
     // Get mentor's mentees
     async getMentees(mentorId, options = {}) {
         try {
@@ -175,6 +145,7 @@ class MentorService {
             console.log(`✅ Found ${rows?.length || 0} mentors in ${Date.now() - startTime}ms`);
             
             const mentors = rows.map(row => ({
+                id : row.id,
                 firstName: row.first_name,
                 lastName: row.last_name,
                 education: row.education,   

@@ -279,14 +279,15 @@ class MenteeService {
     // Find mentors
     async findMentors(menteeId, options = {}) {
         try {
-            const { skills, search, minRating, maxRate, page = 1, limit = 12 } = options;
+            const { skills, minRating, maxRate, minPrice, gender, language, page = 1, limit = 12 } = options;
             const offset = (page - 1) * limit;
 
             let sql = `
                 SELECT u.id, u.firstName, u.lastName, u.avatar, u.bio, u.skills, u.hourlyRate,
-                       AVG(CASE WHEN r.rating IS NOT NULL THEN r.rating ELSE NULL END) as averageRating,
-                       COUNT(r.id) as reviewCount,
-                       COUNT(DISTINCT mr.menteeId) as menteeCount
+                    u.gender, u.languages,
+                    AVG(CASE WHEN r.rating IS NOT NULL THEN r.rating ELSE 4 END) as averageRating,
+                    COUNT(r.id) as reviewCount,
+                    COUNT(DISTINCT mr.menteeId) as menteeCount
                 FROM users u
                 LEFT JOIN reviews r ON r.mentorId = u.id
                 LEFT JOIN mentor_mentee_relationships mr ON mr.mentorId = u.id AND mr.status = 'active'
@@ -296,50 +297,72 @@ class MenteeService {
                     WHERE menteeId = ? AND status IN ('active', 'pending')
                 )
             `;
-            
+
             const params = [menteeId];
 
+            // FIX #3: Add filters in WHERE clause BEFORE GROUP BY
             if (skills && skills.length > 0) {
                 const skillConditions = skills.map(() => 'u.skills LIKE ?').join(' OR ');
                 sql += ` AND (${skillConditions})`;
                 skills.forEach(skill => params.push(`%${skill}%`));
             }
 
-            if (search) {
-                sql += ' AND (u.firstName LIKE ? OR u.lastName LIKE ? OR u.bio LIKE ? OR u.skills LIKE ?)';
-                params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+            if (subject) {
+                sql += ` AND u.skills LIKE ?`;
+                params.push(`%${subject}%`);
+            }
+
+            if (minPrice) {
+                sql += ` AND u.hourlyRate >= ?`;
+                params.push(minPrice);
+            }
+
+            if (maxRate) {
+                sql += ` AND u.hourlyRate <= ?`;
+                params.push(maxRate);
+            }
+
+            if (gender) {
+                sql += ` AND u.gender = ?`;
+                params.push(gender);
+            }
+
+            if (language) {
+                sql += ` AND u.languages LIKE ?`;
+                params.push(`%${language}%`);
             }
 
             sql += ' GROUP BY u.id';
 
+            // FIX: Rating filter in HAVING clause (correct place for aggregate)
             if (minRating) {
                 sql += ' HAVING averageRating >= ?';
                 params.push(minRating);
             }
 
-            if (maxRate) {
-                sql += ' AND u.hourlyRate <= ?';
-                params.push(maxRate);
-            }
-
             sql += ' ORDER BY averageRating DESC, reviewCount DESC LIMIT ? OFFSET ?';
             params.push(limit, offset);
+
+            console.log('Query:', sql);
+            console.log('Params:', params);
 
             const mentors = await db.all(sql, params);
 
             return mentors.map(mentor => ({
                 ...mentor,
+                firstName: mentor.firstName,
+                lastName: mentor.lastName,
                 name: `${mentor.firstName} ${mentor.lastName}`,
-                averageRating: mentor.averageRating ? parseFloat(mentor.averageRating).toFixed(1) : null,
+                averageRating: mentor.averageRating ? parseFloat(mentor.averageRating).toFixed(1) : 4,
                 reviewCount: mentor.reviewCount || 0,
                 menteeCount: mentor.menteeCount || 0,
-                skills: mentor.skills ? mentor.skills.split(',') : []
+                skills: mentor.skills ? mentor.skills.split(',').map(s => s.trim()) : []
             }));
         } catch (error) {
             console.error('Error finding mentors:', error);
             throw new Error('Failed to find mentors');
         }
-    }
+        }
 
     // Request mentoring
     async requestMentoring(requestData) {

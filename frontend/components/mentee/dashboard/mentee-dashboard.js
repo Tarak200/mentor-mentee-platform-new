@@ -73,6 +73,7 @@ async function loadMentors() {
 
         const mentors = await response.json();
         console.log("✅ Mentors received:", mentors);
+        allMentors = mentors;
 
         displayMentors(mentors);
     } catch (error) {
@@ -304,7 +305,13 @@ async function searchMentors() {
         const response = await fetch(`/api/mentee/find-mentors?${params.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
+        // const result = await response.json();
+
+        // console.log('API Response Structure:', result);
+        // console.log('Mentors data:', result.data);
+        // console.log('Mentors data type:', typeof result.data);
+                
         if (response.ok) {
             const result = await response.json();
             console.log('Search result:', result);
@@ -347,15 +354,15 @@ function clearFilters() {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Page loaded - setting up...');
+// document.addEventListener('DOMContentLoaded', async () => {
+//     console.log('Page loaded - setting up...');
     
-    // Setup event listeners first
-    setupEventListeners();
+//     // Setup event listeners first
+//     setupEventListeners();
     
-    // Then load mentors
-    await loadMentors();
-});
+//     // Then load mentors
+//     await loadMentors();
+// });
 // Global variable to track if handler is already attached
 let isFormHandlerAttached = false;
 
@@ -389,7 +396,7 @@ function displayMentors(mentors) {
         // console.log("Rendering mentor:", mentor.firstName, mentor.lastName);
         const mentorName = `${mentor.firstName || ''} ${mentor.lastName || ''}`;
         const safeMentorName = mentorName.replace(/'/g, "\\'");
-
+        console.log("mentor:", mentor)
         return `
         <div class="mentor-card enhanced" data-mentor-id="${mentor.id}" data-mentor-name="${safeMentorName}">
             <div class="mentor-header">
@@ -462,6 +469,7 @@ function displayMentors(mentors) {
             const card = e.target.closest('.mentor-card');
             const mentorId = card.getAttribute('data-mentor-id');
             const mentorName = card.getAttribute('data-mentor-name');
+            console.log("Mentor ID:", mentorId, "Mentor Name:", mentorName);
             connectWithMentor(mentorId, mentorName);
         });
     });
@@ -469,7 +477,11 @@ function displayMentors(mentors) {
     mentorsGrid.querySelectorAll('.mentor-card .btn-view').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const card = e.target.closest('.mentor-card');
+            console.log('🔍 Card found:', card);
+            console.log('🔍 Card classes:', card?.className);
+            console.log('🔍 Card HTML:', card?.outerHTML.substring(0, 200));
             const mentorId = card.getAttribute('data-mentor-id');
+            console.log("👁️ 'View Profile' button clicked for mentor ID:", mentorId);
             viewMentorProfile(mentorId);
         });
     });
@@ -999,6 +1011,7 @@ async function viewMentorProfile(mentorId) {
 
   try {
     const token = localStorage.getItem('authToken') || '';
+    console.log('Fetching mentor profile for ID:', mentorId);
     const response = await fetch(`/api/mentor/${encodeURIComponent(mentorId)}`, {
       headers: {
         'Authorization': token ? `Bearer ${token}` : '',

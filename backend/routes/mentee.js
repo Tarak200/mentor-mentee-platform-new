@@ -32,24 +32,29 @@ router.get('/mentors', async (req, res) => {
 // GET /api/mentee/find-mentors
 router.get('/find-mentors', async (req, res) => {
   try {
-    const { search, skills, minRating, maxRate, page, limit } = req.query;
-    const skillList = Array.isArray(skills) ? skills : (skills ? [skills] : []);
+    // FIX #1: Use correct parameter names from frontend
+    const { subject, language, minPrice, maxPrice, gender, page, limit } = req.query;
+    
+    // Convert to format expected by service
+    const skillList = subject ? [subject] : [];
+    
     const data = await menteeService.findMentors(req.user.userId || req.user.id, {
-      search,
       skills: skillList,
-      minRating: minRating ? Number(minRating) : undefined,
-      maxRate: maxRate ? Number(maxRate) : undefined,
-      page: Number(page)||1,
-      limit: Number(limit)||12
+      minRating: undefined,
+      maxRate: maxPrice ? Number(maxPrice) : undefined,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      gender: gender,
+      language: language,
+      page: Number(page) || 1,
+      limit: Number(limit) || 12
     });
 
-    // Normalize fields to the snake_case the mentee dashboard expects,
-    // while preserving original fields for compatibility.
+    // FIX #2: Normalize to camelCase for frontend (as it now expects)
     const normalized = (Array.isArray(data) ? data : []).map(m => {
       const firstName = m.firstName ?? m.first_name ?? '';
       const lastName = m.lastName ?? m.last_name ?? '';
-      const avatar = m.avatar ?? m.profile_picture ?? null;
-      const hourlyRate = (m.hourlyRate ?? m.hourlyRate ?? null);
+      const profilePicture = m.avatar ?? m.profile_picture ?? 'backend/uploads/default.jpg';
+      const hourlyRate = m.hourlyRate ?? null;
       const rating = Number(m.averageRating ?? m.rating ?? 4);
       const totalSessions = m.menteeCount ?? m.total_sessions ?? 0;
       const languages = Array.isArray(m.languages) ? m.languages : [];
@@ -58,10 +63,10 @@ router.get('/find-mentors', async (req, res) => {
 
       return {
         ...m,
-        first_name: firstName,
-        last_name: lastName,
-        profile_picture: avatar,
-        hourlyRate: hourlyRate,
+        firstName,           // ← camelCase (what frontend expects)
+        lastName,
+        profile_picture: profilePicture,
+        hourlyRate,
         rating,
         total_sessions: totalSessions,
         languages,
@@ -75,9 +80,11 @@ router.get('/find-mentors', async (req, res) => {
 
     res.json({ success: true, data: normalized });
   } catch (err) {
+    console.error('Error in find-mentors:', err);
     res.status(500).json({ success: false, message: err.message || 'Failed to search mentors' });
   }
 });
+
 
 // GET /api/mentee/sessions
 router.get('/sessions', async (req, res) => {
