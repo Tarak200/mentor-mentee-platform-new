@@ -132,6 +132,7 @@ router.get('/sessions', authMiddleware.authenticateToken, requireMentor, async (
 
 // Create new session
 router.post('/sessions', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
+    console.log("sessions api is triggered")
     try {
         const mentorId = req.user.id;
         const sessionData = {
@@ -284,8 +285,9 @@ router.get('/activity', authMiddleware.authenticateToken, requireMentor, async (
 router.get('/requests/pending', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
         const mentorId = req.user.userId || req.user.id;
+        // console.log('Fetching pending requests for mentorId:', mentorId);
         const requests = await mentorService.getPendingRequests(mentorId);
-        
+        // console.log('Pending requests fetched:', requests);
         res.json({ success: true, data: requests });
     } catch (error) {
         console.error('Error fetching pending requests:', error);

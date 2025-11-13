@@ -322,9 +322,10 @@ class MentorService {
     // Get pending requests
     async getPendingRequests(mentorId) {
         try {
+            // console.log('Querying pending requests for mentorId:', mentorId);
             return await db.all(
                 `SELECT r.*, u.firstName, u.lastName, u.avatar, u.bio,
-                        u.firstName || ' ' || u.lastName as menteeName
+                        u.firstName || ' ' || u.lastName as menteeName, u.email, u.education, u.institution, u.current_pursuit, u.languages, u.subjects, u.qualifications
                  FROM mentoring_requests r
                  JOIN users u ON r.menteeId = u.id
                  WHERE r.mentorId = ? AND r.status = 'pending'

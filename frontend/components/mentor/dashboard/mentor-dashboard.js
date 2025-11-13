@@ -211,6 +211,8 @@ async function loadRequests() {
             }
         });
 
+        // console.log('Response status:', response.status);
+
         // Handle non-successful responses
         if (!response.ok) {
             const errorText = await response.text();
@@ -232,9 +234,10 @@ async function loadRequests() {
 
         // Parse the JSON response
         const result = await response.json();
+        // console.log(result)
         const requests = result.data || [];
 
-        console.log('Fetched requests:', requests);
+        // console.log('Fetched requests:', requests);
 
         // Update total requests count if element exists
         if (totalRequestsEl) totalRequestsEl.textContent = requests.length;
@@ -257,12 +260,13 @@ async function loadRequests() {
                 (request) => `
             <div class="mentee-request-card enhanced">
                 <div class="mentee-header">
-                    <img src="${request.profile_picture || '/uploads/default-avatar.png'}" 
-                         alt="${request.first_name}">
+                    <img src="${request.avatar || '/uploads/default.png'}" 
+                        alt="${request.firstName}">
                     <div class="mentee-basic">
-                        <h3>${request.first_name} ${request.last_name}</h3>
+                        <h3>${request.firstName} ${request.lastName}</h3>
                         <div class="mentee-info">
-                            <span><i class="fas fa-envelope"></i> ${request.email}</span>
+                            <span><i class="fas fa-envelope"></i> ${request.email || 'undefined'}</span>
+                            ${request.institution ? `<span><i class="fas fa-university"></i> ${request.institution}</span>` : ''}
                         </div>
                     </div>
                     <div class="request-time">
@@ -274,9 +278,42 @@ async function loadRequests() {
                 </div>
 
                 <div class="mentee-details">
+                    ${
+                        request.current_pursuit
+                            ? `
+                        <div class="detail-section">
+                            <h4><i class="fas fa-briefcase"></i> Current Pursuit:</h4>
+                            <p class="info-text">${request.current_pursuit}</p>
+                        </div>
+                    `
+                            : ''
+                    }
+
+                    ${
+                        request.education
+                            ? `
+                        <div class="detail-section">
+                            <h4><i class="fas fa-graduation-cap"></i> Education:</h4>
+                            <p class="info-text">${request.education}</p>
+                        </div>
+                    `
+                            : ''
+                    }
+
+                    ${
+                        request.qualifications
+                            ? `
+                        <div class="detail-section">
+                            <h4><i class="fas fa-certificate"></i> Qualifications:</h4>
+                            <p class="info-text">${request.qualifications}</p>
+                        </div>
+                    `
+                            : ''
+                    }
+
                     <div class="detail-section">
                         <h4><i class="fas fa-book"></i> Wants to Learn:</h4>
-                        <p class="subject-highlight">${request.subject}</p>
+                        <p class="subject-highlight">${request.bio || 'Not specified'}</p>
                     </div>
 
                     ${
@@ -294,26 +331,33 @@ async function loadRequests() {
                         <div class="preference-item">
                             <i class="fas fa-clock"></i>
                             <label>Preferred Time:</label>
-                            <span>${request.preferred_time || 'Flexible'}</span>
+                            <span>${request.preferredSchedule || 'Flexible'}</span>
                         </div>
                         <div class="preference-item">
                             <i class="fas fa-star"></i>
                             <label>Interests:</label>
-                            <span>${
-                                request.interests
-                                    ? request.interests.join(', ')
-                                    : 'General learning'
-                            }</span>
+                            <span>${request.subjects || 'General learning'}</span>
                         </div>
+                        ${
+                            request.languages
+                                ? `
+                            <div class="preference-item">
+                                <i class="fas fa-language"></i>
+                                <label>Languages:</label>
+                                <span>${request.languages}</span>
+                            </div>
+                        `
+                                : ''
+                        }
                     </div>
                 </div>
 
                 <div class="request-actions">
                     <button class="btn btn-accept" 
-                            onclick="acceptRequest(${request.id}, '${request.first_name} ${request.last_name}', '${request.subject}')">
+                            onclick="acceptRequest('${request.id}', '${request.firstName} ${request.lastName}', '${request.goals || request.message}')">
                         <i class="fas fa-check-circle"></i> Accept Request
                     </button>
-                    <button class="btn btn-reject" onclick="rejectRequest(${request.id})">
+                    <button class="btn btn-reject" onclick="rejectRequest('${request.id}')">
                         <i class="fas fa-times-circle"></i> Decline
                     </button>
                 </div>
@@ -322,7 +366,6 @@ async function loadRequests() {
             )
             .join('');
 
-        // Render all requests
         requestsList.innerHTML = requestsHtml;
 
     } catch (error) {
@@ -337,12 +380,6 @@ async function loadRequests() {
         `;
     }
 }
-
-// Optional: Automatically load requests on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadRequests();
-});
-
 
 async function loadSessions() {
     try {
