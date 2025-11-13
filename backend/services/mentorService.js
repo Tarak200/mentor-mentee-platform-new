@@ -194,47 +194,116 @@ class MentorService {
     async getSessions(mentorId, options = {}) {
         try {
             const { status, menteeId, dateFrom, dateTo, page = 1, limit = 20 } = options;
-            const offset = (page - 1) * limit;
+            // console.log("query is triggered");
 
-            let sql = `
-                SELECT s.*, u.firstName, u.lastName,
-                       u.firstName || ' ' || u.lastName as menteeName
+            // console.log("mentorId being queried:", mentorId);
+            // console.log("mentorId type:", typeof mentorId);
+
+            // Base query
+            let query = `
+                SELECT 
+                    s.id,
+                    s.mentorId AS mentor_id,
+                    s.menteeId AS mentee_id,
+                    s.title,
+                    s.description,
+                    s.scheduledAt AS scheduled_time,
+                    s.duration,
+                    s.amount,
+                    s.paymentStatus AS payment_status,
+                    s.status,
+                    s.created_at,
+                    u.firstName AS mentee_first_name,
+                    u.lastName AS mentee_last_name,
+                    u.current_pursuit AS mentee_current_pursuit,
+                    u.education AS mentee_education,
+                    u.institution AS mentee_institution,
+                    u.email AS mentee_email,
+                    u.languages AS mentee_languages,
+                    u.subjects AS mentee_subjects,
+                    u.qualifications AS mentee_qualifications,
+                    u.profile_picture as profilePic
                 FROM mentoring_sessions s
                 JOIN users u ON s.menteeId = u.id
                 WHERE s.mentorId = ?
             `;
-            
             const params = [mentorId];
-
+            
+            // Apply optional filters
             if (status) {
-                sql += ' AND s.status = ?';
+                query += ` AND s.status = ?`;
                 params.push(status);
             }
-
             if (menteeId) {
-                sql += ' AND s.menteeId = ?';
+                query += ` AND s.menteeId = ?`;
                 params.push(menteeId);
             }
-
             if (dateFrom) {
-                sql += ' AND s.scheduledAt >= ?';
+                query += ` AND s.scheduledAt >= ?`;
                 params.push(dateFrom);
             }
-
             if (dateTo) {
-                sql += ' AND s.scheduledAt <= ?';
+                query += ` AND s.scheduledAt <= ?`;
                 params.push(dateTo);
             }
 
-            sql += ' ORDER BY s.scheduledAt DESC LIMIT ? OFFSET ?';
+            // Ordering and pagination
+            query += ` ORDER BY s.scheduledAt DESC`;
+            const offset = (page - 1) * limit;
+            query += ` LIMIT ? OFFSET ?`;
             params.push(limit, offset);
 
-            return await db.all(sql, params);
+            // Execute session query
+            const sessions = await db.all(query, params);
+            // console.log("queried successfully !")
+            // console.log("getSessions sessions:", sessions);
+
+            // Count query for pagination
+            let countQuery = `
+                SELECT COUNT(*) AS total
+                FROM mentoring_sessions s
+                WHERE s.mentorId = ?
+            `;
+            const countParams = [mentorId];
+
+            if (status) {
+                countQuery += ` AND s.status = ?`;
+                countParams.push(status);
+            }
+            if (menteeId) {
+                countQuery += ` AND s.menteeId = ?`;
+                countParams.push(menteeId);
+            }
+            if (dateFrom) {
+                countQuery += ` AND s.scheduledAt >= ?`;
+                countParams.push(dateFrom);
+            }
+            if (dateTo) {
+                countQuery += ` AND s.scheduledAt <= ?`;
+                countParams.push(dateTo);
+            }
+
+            const countResult = await db.get(countQuery, countParams);
+            const total = countResult ? countResult.total : 0;
+            
+            const result = {
+                sessions,
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                },
+            };
+            
+            return result;
+            
         } catch (error) {
             console.error('Error fetching sessions:', error);
-            throw new Error('Failed to fetch sessions');
+            throw new Error('Failed to fetch sessions: ' + error.message);
         }
     }
+
 
     // Create new session
     async createSession(sessionData) {

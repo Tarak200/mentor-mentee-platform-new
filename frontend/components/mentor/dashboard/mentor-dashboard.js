@@ -260,7 +260,7 @@ async function loadRequests() {
                 (request) => `
             <div class="mentee-request-card enhanced">
                 <div class="mentee-header">
-                    <img src="${request.avatar || '/uploads/default.png'}" 
+                    <img src="${request.avatar || '../uploads/default.jpg'}" 
                         alt="${request.firstName}">
                     <div class="mentee-basic">
                         <h3>${request.firstName} ${request.lastName}</h3>
@@ -381,47 +381,293 @@ async function loadRequests() {
     }
 }
 
+let allSessions = [];
+let currentSessionTab = 'upcoming';
+
 async function loadSessions() {
     try {
+        document.getElementById('sessionsList').innerHTML = `
+            <div class="loading-sessions">
+                <div class="spinner"></div>
+                <p>Loading your teaching sessions...</p>
+            </div>
+        `;
+        
         const response = await fetch('/api/mentor/sessions', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
+        const data = await response.json();
         
-        if (response.ok) {
-            const sessions = await response.json();
-            document.getElementById('upcomingSessions').textContent = sessions.length;
-            
-            const sessionsHtml = sessions.length > 0 ?
-                sessions.map(session => `
-                    <div class="session-card">
-                        <div class="session-info">
-                            <div>
-                                <strong>Mentee:</strong> ${session.mentee_first_name} ${session.mentee_last_name}
-                            </div>
-                            <div>
-                                <strong>Subject:</strong> ${session.subject}
-                            </div>
-                            <div>
-                                <strong>Date & Time:</strong> ${new Date(session.scheduled_time).toLocaleString()}
-                            </div>
-                            <div>
-                                <strong>Amount:</strong> ₹${session.amount}
-                            </div>
-                        </div>
-                        ${session.meeting_link ? `<p><strong>Meeting Link:</strong> <a href="${session.meeting_link}" target="_blank">${session.meeting_link}</a></p>` : ''}
-                    </div>
-                `).join('') :
-                '<p>No scheduled sessions</p>';
-            
-            document.getElementById('sessionsList').innerHTML = sessionsHtml;
-        }
+        console.log('Sessions loaded:', data);
+        
+        allSessions = data.sessions || [];
+        
+        updateSessionSummary(allSessions);
+        renderSessionsByTab('upcoming');
+        
     } catch (error) {
         console.error('Error loading sessions:', error);
+        document.getElementById('sessionsList').innerHTML = `
+            <div class="no-sessions">
+                <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
+                <p>Failed to load sessions. Please try again.</p>
+            </div>
+        `;
     }
 }
 
+function updateSessionSummary(sessions) {
+    const upcomingSessions = sessions.filter(s => s.status === 'upcoming');
+    
+    // FIX: Directly count completed sessions instead of subtracting
+    const completedSessions = sessions.filter(s => s.status === 'completed').length;
+    
+    totalSessions = sessions.length;
+    // console.log(totalSessions)
+    // console.log(upcomingSessions.length)
+    // console.log(completedSessions) // Add this to verify
+    
+    const today = new Date().toDateString();
+    const todaySessions = upcomingSessions.filter(s => 
+        new Date(s.scheduled_time).toDateString() === today
+    );
+    
+    document.getElementById('futureCalls').textContent = upcomingSessions.length;
+    document.getElementById('todaySessions').textContent = todaySessions.length;
+    document.getElementById('upcomingSessions').textContent = upcomingSessions.length;
+    document.getElementById('completedSessions').textContent = completedSessions;
+}
+
+
+
+
+function switchSessionTab(status) {
+    currentSessionTab = status;
+    
+    document.querySelectorAll('.sessions-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const targetBtn = document.querySelector(`.sessions-tab-btn[data-status="${status}"]`);
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    }
+    
+    renderSessionsByTab(status);
+}
+
+
+function renderSessionsByTab(status) {
+    const filteredSessions = allSessions.filter(session => 
+        session.status === status
+    );
+    
+    const sessionsHtml = filteredSessions.length > 0 ?
+        filteredSessions.map(session => {
+            // Determine ribbon status
+            const ribbonStatus = session.status === 'completed' && session.payment_status === 'paid' 
+                ? 'paid' 
+                : session.status === 'completed' 
+                ? 'completed' 
+                : session.status;
+
+            return `
+                <div class="session-card">
+                    ${ribbonStatus !== 'upcoming' ? `
+                        <div class="ribbon-badge ${ribbonStatus}" data-status="${ribbonStatus}">
+                            ${ribbonStatus === 'paid' ? 'PAID' : 'COMPLETED'}
+                        </div>
+                    ` : ''}
+
+                    
+                    <!-- Card Header with Mentee Info -->
+                    <div class="card-header">
+                        <img src="${session.profilePic || '../uploads/default.jpg'}" 
+                             alt="${session.mentee_first_name}" 
+                             class="mentee-avatar"
+                             onerror="this.src='../uploads/default.jpg'">
+                        <div class="mentee-info">
+                            <h4 class="mentee-name">${session.mentee_first_name} ${session.mentee_last_name}</h4>
+                            <p class="mentee-institution">${session.mentee_institution || 'Not specified'}</p>
+                            <p class="mentee-pursuit">${session.mentee_current_pursuit || 'Not specified'}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <!-- Session Title -->
+                        <div class="session-title">
+                            <i class="fas fa-bookmark"></i>
+                            <h3>${session.title || 'Mentoring Session'}</h3>
+                        </div>
+                        
+                        <!-- Description -->
+                        ${session.description ? `
+                            <div class="session-description">
+                                <i class="fas fa-info-circle"></i>
+                                <p>${session.description}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Session Details Grid -->
+                        <div class="session-details">
+                            <!-- Date & Time -->
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="detail-content">
+                                    <p class="detail-label">Scheduled Time</p>
+                                    <p class="detail-value">${new Date(session.scheduled_time).toLocaleDateString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    })} at ${new Date(session.scheduled_time).toLocaleTimeString('en-IN', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true
+                                    })}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Duration -->
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-hourglass-half"></i>
+                                </div>
+                                <div class="detail-content">
+                                    <p class="detail-label">Duration</p>
+                                    <p class="detail-value">${session.duration} mins</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Amount -->
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-rupee-sign"></i>
+                                </div>
+                                <div class="detail-content">
+                                    <p class="detail-label">Amount</p>
+                                    <p class="detail-value">₹${session.amount}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Payment Status -->
+                            <div class="detail-item">
+                                <div class="detail-icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div class="detail-content">
+                                    <p class="detail-label">Payment</p>
+                                    <p class="detail-value">
+                                        <span class="payment-status-badge ${session.payment_status}">
+                                            <i class="fas ${session.payment_status === 'paid' ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                            ${session.payment_status}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mentee Additional Info -->
+                        <div class="mentee-additional-info">
+                            <div class="info-row">
+                                <span class="info-label"><i class="fas fa-envelope"></i> Email:</span>
+                                <span class="info-value">${session.mentee_email}</span>
+                            </div>
+                            ${session.mentee_education ? `
+                                <div class="info-row">
+                                    <span class="info-label"><i class="fas fa-graduation-cap"></i> Education:</span>
+                                    <span class="info-value">${session.mentee_education}</span>
+                                </div>
+                            ` : ''}
+                            ${session.mentee_languages ? `
+                                <div class="info-row">
+                                    <span class="info-label"><i class="fas fa-language"></i> Languages:</span>
+                                    <span class="info-value">${session.mentee_languages}</span>
+                                </div>
+                            ` : ''}
+                            ${session.mentee_subjects ? `
+                                <div class="info-row">
+                                    <span class="info-label"><i class="fas fa-book"></i> Subjects:</span>
+                                    <span class="info-value">${session.mentee_subjects}</span>
+                                </div>
+                            ` : ''}
+                            ${session.mentee_qualifications ? `
+                                <div class="info-row">
+                                    <span class="info-label"><i class="fas fa-award"></i> Qualifications:</span>
+                                    <span class="info-value">${session.mentee_qualifications}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Meeting Link (if available) -->
+                        ${session.meeting_link ? `
+                            <a href="${session.meeting_link}" target="_blank" class="meeting-link-btn">
+                                <i class="fas fa-video"></i>
+                                Join Meeting
+                            </a>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('') :
+        `<div class="no-sessions">
+            <i class="fas fa-calendar-times"></i>
+            <p>No ${status} sessions found</p>
+        </div>`;
+    
+    document.getElementById('sessionsList').innerHTML = sessionsHtml;
+}
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    let currentTab = 'requests'; // Default tab
+
+function showSection(sectionName) {
+    console.log("Switching to section:", sectionName);
+
+    // Hide all sections
+    document.querySelectorAll('.dashboard-section').forEach(section => {
+        section.style.display = 'none';
+    });
+
+    // Show the selected section
+    const targetSection = document.getElementById(sectionName + 'Section');
+    if (targetSection) {
+        targetSection.style.display = 'block';
+    } else {
+        console.error(`Section ${sectionName}Section not found!`);
+    }
+
+    // Update tab button states
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+        if (btn.getAttribute('data-tab') === sectionName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+        // Remember the current tab
+        currentTab = sectionName;
+    }
+
+    // Attach click listeners to each tab button
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const tab = this.getAttribute('data-tab');
+            showSection(tab);
+        });
+    });
+
+    // Show default tab on load
+    showSection(currentTab);
+});
+
+// Load earnings data
 async function loadEarnings() {
     try {
         const response = await fetch('/api/mentor/earnings', {
@@ -435,57 +681,13 @@ async function loadEarnings() {
             document.getElementById('totalEarnings').textContent = `₹${earnings.total_earnings || 0}`;
             document.getElementById('totalEarningsDetailed').textContent = `₹${earnings.total_earnings || 0}`;
             document.getElementById('pendingEarnings').textContent = `₹${earnings.pending_earnings || 0}`;
-            document.getElementById('completedSessions').textContent = earnings.total_sessions || 0;
+            // document.getElementById('completedSessions').textContent = earnings.total_sessions || 0;
             document.getElementById('sessionsCount').textContent = earnings.total_sessions || 0;
         }
     } catch (error) {
         console.error('Error loading earnings:', error);
     }
 }
-
-document.addEventListener('DOMContentLoaded', function () {
-    let currentTab = 'requests'; // Default tab
-
-    function showSection(sectionName) {
-        console.log("Switching to section:", sectionName);
-
-        // Hide all sections
-        document.querySelectorAll('.dashboard-section').forEach(section => {
-            section.style.display = 'none';
-        });
-
-        // Show the selected section
-        const targetSection = document.getElementById(sectionName + 'Section');
-        if (targetSection) {
-            targetSection.style.display = 'block';
-        } else {
-            console.error(`Section ${sectionName}Section not found!`);
-        }
-
-        // Update tab button states
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            if (btn.getAttribute('data-tab') === sectionName) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-
-            // Remember the current tab
-            currentTab = sectionName;
-        }
-
-        // Attach click listeners to each tab button
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const tab = this.getAttribute('data-tab');
-                showSection(tab);
-            });
-        });
-
-        // Show default tab on load
-        showSection(currentTab);
-    });
 
 function acceptRequest(requestId, menteeName, subject) {
     currentRequestId = requestId;
@@ -739,7 +941,7 @@ function showIncomingRequestModal(payload) {
             </div>
             <div class="mentee-preview">
                 <div class="mentee-preview-card">
-                    <img src="${payload.mentee?.avatar || '/uploads/default-avatar.png'}" alt="${payload.mentee?.firstName || ''}">
+                    <img src="${payload.mentee?.avatar || '../uploads/default.jpg'}" alt="${payload.mentee?.firstName || ''}">
                     <div>
                         <h4>${(payload.mentee?.firstName || '') + ' ' + (payload.mentee?.lastName || '')}</h4>
                         ${payload.subject ? `<p><strong>Subject:</strong> ${payload.subject}</p>` : ''}

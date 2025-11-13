@@ -76,6 +76,50 @@ router.get('/mentees/:menteeId', authMiddleware.authenticateToken, requireMentor
     }
 });
 
+// Get mentor's sessions
+router.get('/sessions', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
+    // console.log("sessions api is triggered")
+    try {
+        // console.log("request user:", req.user);
+        const mentorId = req.user.userId;
+        // console.log("mentorId:", mentorId);
+        const { status, menteeId, dateFrom, dateTo, page = 1, limit = 20 } = req.query;
+
+        const sessions = await mentorService.getSessions(mentorId, {
+            status,
+            menteeId,
+            dateFrom,
+            dateTo,
+            page: parseInt(page),
+            limit: parseInt(limit)
+        });
+        // console.log("sessions fetched:", sessions)
+        res.json(sessions);
+    } catch (error) {
+        console.error('Error fetching sessions:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get earnings data
+router.get('/earnings', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
+    try {
+        const mentorId = req.user.id;
+        const { period = 'month', year, month } = req.query;
+
+        const earnings = await mentorService.getEarnings(mentorId, {
+            period,
+            year: year ? parseInt(year) : undefined,
+            month: month ? parseInt(month) : undefined
+        });
+
+        res.json(earnings);
+    } catch (error) {
+        console.error('Error fetching earnings:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // GET /api/mentor/:mentorId
 router.get('/:mentorId', authMiddleware.authenticateToken, async (req, res) => {
   try {
@@ -84,7 +128,7 @@ router.get('/:mentorId', authMiddleware.authenticateToken, async (req, res) => {
 
     // You can fetch mentor details from DB using a service or model
     const mentor = await mentorService.getMentorDetails(mentorId);
-    console.log("Mentor details:", mentor);
+    // console.log("Mentor details:", mentor);
 
     if (!mentor) {
       return res.status(404).json({
@@ -107,32 +151,9 @@ router.get('/:mentorId', authMiddleware.authenticateToken, async (req, res) => {
   }
 });
 
-
-// Get mentor's sessions
-router.get('/sessions', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
-    try {
-        const mentorId = req.user.id;
-        const { status, menteeId, dateFrom, dateTo, page = 1, limit = 20 } = req.query;
-
-        const sessions = await mentorService.getSessions(mentorId, {
-            status,
-            menteeId,
-            dateFrom,
-            dateTo,
-            page: parseInt(page),
-            limit: parseInt(limit)
-        });
-
-        res.json(sessions);
-    } catch (error) {
-        console.error('Error fetching sessions:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
 // Create new session
 router.post('/sessions', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
-    console.log("sessions api is triggered")
+    // console.log("sessions api is triggered")
     try {
         const mentorId = req.user.id;
         const sessionData = {
@@ -244,25 +265,6 @@ router.put('/availability', authMiddleware.authenticateToken, requireMentor, asy
         res.json(availability);
     } catch (error) {
         console.error('Error updating availability:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Get earnings data
-router.get('/earnings', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
-    try {
-        const mentorId = req.user.id;
-        const { period = 'month', year, month } = req.query;
-
-        const earnings = await mentorService.getEarnings(mentorId, {
-            period,
-            year: year ? parseInt(year) : undefined,
-            month: month ? parseInt(month) : undefined
-        });
-
-        res.json(earnings);
-    } catch (error) {
-        console.error('Error fetching earnings:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

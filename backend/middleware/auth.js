@@ -13,8 +13,10 @@ const authenticateToken = (req, res, next) => {
             return res.status(403).json({ message: 'Invalid token' });
         }
         req.user = user;
+        // console.log("Authenticated token...")
         next();
     });
+    
 };
 
 const requireRole = (role) => {
@@ -22,8 +24,10 @@ const requireRole = (role) => {
         if (!req.user || (req.user.role !== role && req.user.userType !== role)) {
             return res.status(403).json({ message: 'Access denied' });
         }
+        console.log("Role verified...")
         next();
     };
+
 };
 
 module.exports = {

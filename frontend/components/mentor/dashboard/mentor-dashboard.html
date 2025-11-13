@@ -6,7 +6,7 @@
         <title>Mentor Dashboard - Expert Mentoring Platform</title>
         <link rel="stylesheet" href="/components/shared/shared.css?v=20250921">
         <link rel="stylesheet" href="/components/mentor/dashboard/mentor-dashboard.css?v=20250921">
-        <link rel="stylesheet" href="/components/mentor/dashboard/mentor-sections.css?v=20250921">
+
         <!-- Inline CSS to test if external CSS is loading -->
         
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -131,28 +131,45 @@
                     
                     <div class="sessions-summary">
                         <div class="summary-card">
-                            <i class="fas fa-clock"></i>
-                            <div>
+                            <div class="summary-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="summary-content">
                                 <h3 id="futureCalls">0</h3>
                                 <p>Future Calls Planned</p>
                             </div>
                         </div>
                         <div class="summary-card">
-                            <i class="fas fa-video"></i>
-                            <div>
+                            <div class="summary-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="summary-content">
                                 <h3 id="todaySessions">0</h3>
                                 <p>Sessions Today</p>
                             </div>
                         </div>
                     </div>
                     
+                    <!-- Tabs -->
+                    <div class="sessions-tabs">
+                        <button class="sessions-tab-btn active" data-status="upcoming" onclick="switchSessionTab('upcoming')">
+                            <i class="fas fa-clock"></i>
+                            <span>Upcoming</span>
+                        </button>
+                        <button class="sessions-tab-btn" data-status="completed" onclick="switchSessionTab('completed')">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Completed</span>
+                        </button>
+                    </div>
+                    
                     <div id="sessionsList" class="sessions-list">
                         <div class="loading-sessions">
-                            <i class="fas fa-spinner fa-spin"></i>
+                            <div class="spinner"></div>
                             <p>Loading your teaching sessions...</p>
                         </div>
                     </div>
                 </section>
+
 
                 <!-- Earnings Section -->
                 <section id="earningsSection" class="dashboard-section" style="display: none;">
