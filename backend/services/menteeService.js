@@ -430,9 +430,9 @@ class MenteeService {
                 [menteeId, mentorId]
             );
 
-            // if (existingRequest) {
-            //     throw new Error('You already have an active request with this mentor');
-            // }
+            if (existingRequest) {
+                throw new Error('You already have an active request with this mentor');
+            }
 
             const requestId = Date.now().toString();
             console.log("preferred Schedule:",preferredSchedule);

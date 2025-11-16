@@ -42,8 +42,43 @@ if (!token) {
     window.location.href = '/login';
 }
 
+    
+    
 // Load dashboard data
 document.addEventListener('DOMContentLoaded', async () => {
+
+    // Event delegation for dynamically created buttons
+    document.addEventListener('click', async function(e) {
+        
+        // Handle Accept Button Click
+        if (e.target.closest('.btn-accept')) {
+            const button = e.target.closest('.btn-accept');
+            const requestId = button.getAttribute('data-request-id');
+            const firstName = button.getAttribute('data-first-name');
+            const lastName = button.getAttribute('data-last-name');
+            const goals = button.getAttribute('data-goals');
+            const avatar = button.getAttribute('data-avatar');
+            
+            // Show the modal with request details
+            showIncomingRequestModal({
+                requestId: requestId,
+                mentee: {
+                    firstName: firstName,
+                    lastName: lastName,
+                    avatar: avatar
+                },
+                message: goals
+            });
+        }
+        
+        // Handle Reject Button Click
+        if (e.target.closest('.btn-reject')) {
+            const button = e.target.closest('.btn-reject');
+            const requestId = button.getAttribute('data-request-id');
+            await rejectRequest(requestId);
+        }
+    });
+
     await loadProfile();
     await loadRequests();
     await loadSessions();
@@ -353,11 +388,10 @@ async function loadRequests() {
                 </div>
 
                 <div class="request-actions">
-                    <button class="btn btn-accept" 
-                            onclick="acceptRequest('${request.id}', '${request.firstName} ${request.lastName}', '${request.goals || request.message}')">
+                    <button class="btn btn-accept" data-request-id="${request.id}" data-name="${request.firstName} ${request.lastName}" data-goals="${request.goals || request.message}">
                         <i class="fas fa-check-circle"></i> Accept Request
                     </button>
-                    <button class="btn btn-reject" onclick="rejectRequest('${request.id}')">
+                    <button class="btn btn-reject" data-request-id="${request.id}">
                         <i class="fas fa-times-circle"></i> Decline
                     </button>
                 </div>
@@ -968,16 +1002,33 @@ function showIncomingRequestModal(payload) {
 
     modal.querySelector('.modal-overlay').addEventListener('click', close);
     modal.querySelector('.close-btn').addEventListener('click', close);
+    // FIND THIS SECTION IN showIncomingRequestModal():
     modal.querySelector('.btn-accept').addEventListener('click', async () => {
         try {
             const meetingTimeInput = modal.querySelector('.meeting-time-input');
             const meetingLinkInput = modal.querySelector('.meeting-link-input');
-            const meetingTime = meetingTimeInput && meetingTimeInput.value ? meetingTimeInput.value : null;
-            const body = meetingTime ? { meetingTime, meetingLink: meetingLinkInput && meetingLinkInput.value ? meetingLinkInput.value : undefined } : {};
+            const meetingTime = meetingTimeInput?.value;
+            const meetingLink = meetingLinkInput?.value;
+            
+            // BUILD THE REQUEST BODY
+            const body = {};
+            if (meetingTime) {
+                body.meetingTime = meetingTime;
+                if (meetingLink) {
+                    body.meetingLink = meetingLink;
+                }
+            }
+            
+            // SEND THE REQUEST WITH THE BODY
             const resp = await fetch(`/api/mentor/requests/${payload.requestId}/accept`, {
                 method: 'POST',
-headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify(body)  // ← THIS WAS MISSING
             });
+            
             if (resp.ok) {
                 showMessage('Accepted connection request', 'success');
                 close();
@@ -991,6 +1042,7 @@ headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json
             showMessage('Network error', 'error');
         }
     });
+
     modal.querySelector('.btn-reject').addEventListener('click', async () => {
         try {
             const resp = await fetch(`/api/mentor/requests/${payload.requestId}/decline`, {

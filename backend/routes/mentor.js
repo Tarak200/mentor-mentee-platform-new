@@ -369,7 +369,9 @@ router.post('/requests/:requestId/accept', authMiddleware.authenticateToken, req
 // Decline mentoring request
 router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
-        const mentorId = req.user.id;
+        console.log("request :", req);
+        const mentorId = req.user.id || req.user.userId;
+        // console.log("mentorId:", mentorId);
         const { requestId } = req.params;
         const { reason } = req.body;
 
@@ -382,7 +384,7 @@ router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, re
             return res.status(400).json({ error: 'Only pending requests can be declined' });
         }
 
-        await db.run('UPDATE mentoring_requests SET status = "declined", updatedAt = ? WHERE id = ?', [new Date().toISOString(), requestId]);
+        await db.run('UPDATE mentoring_requests SET status = "declined", updated_at = ? WHERE id = ?', [new Date().toISOString(), requestId]);
 
         // Realtime notify mentee immediately
         try {
