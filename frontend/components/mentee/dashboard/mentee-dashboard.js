@@ -854,10 +854,16 @@ function showConfirmationDialog(form) {
         document.body.removeChild(overlay);
     });
     
-    document.getElementById('sendRequestBtn').addEventListener('click', function() {
+    document.getElementById('sendRequestBtn').addEventListener('click', async function() {
         console.log('✅ Request confirmed, sending...');
         document.body.removeChild(overlay);
-        handleConnectFormSubmit(form);
+        // Handle form submission with await
+        const success = await handleConnectFormSubmit(form);
+        
+        // Show success popup only if submission succeeded
+        if (success) {
+            showSuccessPopup('Your connection request has been sent successfully!');
+        }
     });
     
     // Close on overlay click
@@ -944,19 +950,24 @@ async function handleConnectFormSubmit(formElement) {
     
     console.log('Form data:', { subject, message, preferredTime, currentMentorId });
 
-    // Validation
+    // Validation - return false on validation failure
     if (!currentMentorId || !token) {
         showMessage('Authentication error. Please log in again.', 'error');
-        return;
+        console.log('❌ Validation failed: Missing authentication');
+        closeConnectModal();
+        return false;
     }
 
     if (!subject || !message) {
         showMessage('Please fill in all required fields', 'error');
-        return;
+        console.log('❌ Validation failed: Required fields missing');
+        closeConnectModal();
+        return false;
     }
 
     try {
-        console.log('Sending request to API...');
+        console.log('📤 Sending request to API...');
+        
         const response = await fetch('/api/mentee/request', {
             method: 'POST',
             headers: {
@@ -972,19 +983,31 @@ async function handleConnectFormSubmit(formElement) {
         });
 
         const result = await response.json();
-        console.log('API Response:', result);
-        if (result.success) {
+        console.log('📥 API Response:', result);
+        
+        // Check if response was successful
+        if (response.ok && result.success) {
+            console.log('✅ Connection request sent successfully!');
             showSuccessPopup('Connection request sent successfully! 🎉');
-            console.log("closing modal after successful request...");
+            closeConnectModal();
+            return true; // Return true on success
+            
         } else {
-            showMessage(result.message || 'Error sending request', 'error');
-            console.log("closing modal after unsuccessful request...");
+            // API returned an error
+            const errorMessage = result.message || 'Error sending request';
+            console.log('❌ Request failed:', errorMessage);
+            showMessage(errorMessage, 'error');
+            closeConnectModal();
+            return false; // Return false on API error
         }
+        
     } catch (error) {
-        console.error('Connection request error:', error);
+        // Network or other errors
+        console.error('❌ Connection request error:', error);
         showMessage('An error occurred while sending the request', 'error');
+        closeConnectModal();
+        return false; // Return false on exception
     }
-    closeConnectModal();
 }
 
 // ========================================
@@ -1459,23 +1482,39 @@ function showMessage(message, type) {
     }
 }
 
-function showSuccessPopup(message) {
-    const popup = document.getElementById('successPopup');
-    const messageEl = document.getElementById('successPopupMessage');
+// Function to show success popup
+function showSuccessPopup(message = 'Your connection request has been sent to the mentor.') {
+    console.log("successPopup is called");
+    const successPopup = document.getElementById('successPopup');
+    const successMessage = document.getElementById('successPopupMessage');
     
-    if (popup && messageEl) {
-        messageEl.innerHTML = message.replace(/\n/g, '<br>');
-        popup.style.display = 'flex';
-        
-        setTimeout(() => {
-            closeSuccessPopup();
-        }, 5000);
+    // Set custom message if provided
+    if (message) {
+        successMessage.textContent = message;
     }
+    
+    // Show modal with smooth animation
+    successPopup.style.display = 'block';
+    // document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Add animation class for fade-in effect
+    setTimeout(() => {
+        successPopup.style.opacity = '1';
+    }, 10);
 }
 
+// Function to close success popup
 function closeSuccessPopup() {
-    const popup = document.getElementById('successPopup');
-    if (popup) popup.style.display = 'none';
+    const successPopup = document.getElementById('successPopup');
+    
+    // Fade out animation
+    successPopup.style.opacity = '0';
+    
+    // Hide modal after animation completes
+    setTimeout(() => {
+        successPopup.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    }, 300);
 }
 
 function logout() {

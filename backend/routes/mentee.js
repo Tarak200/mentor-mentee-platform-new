@@ -138,6 +138,8 @@ router.get('/requests', async (req, res) => {
 router.post('/request', async (req, res) => {
   try {
     const menteeId = req.user.userId || req.user.id;
+    console.log("Mentee ID:", menteeId);
+    console.log("Request Body:", req.body);
     const payload = { ...req.body, menteeId };
     const data = await menteeService.requestMentoring(payload);
 

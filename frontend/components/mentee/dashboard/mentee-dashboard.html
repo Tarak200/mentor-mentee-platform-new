@@ -362,17 +362,18 @@
         <div id="successPopup" class="modal" style="display: none;">
             <div class="modal-overlay" onclick="closeSuccessPopup()"></div>
             <div class="modal-content success-popup">
-                <div class="success-icon">
-                    <i class="fas fa-check-circle" style="color: #10B981; font-size: 3rem;"></i>
+                <div class="success-icon-wrapper">
+                    <div class="success-circle">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
                 </div>
-                <div class="success-content" style="text-align: center; padding: 20px;">
-                    <h3 style="color: #10B981; margin: 10px 0;">Success!</h3>
-                    <p id="successPopupMessage" style="margin: 15px 0; line-height: 1.5;"></p>
-                    <button onclick="closeSuccessPopup()" class="btn btn-primary" style="margin-top: 20px;">OK</button>
+                <div class="success-content">
+                    <h3>Request Sent Successfully!</h3>
+                    <p id="successPopupMessage">Your connection request has been sent to the mentor.</p>
+                    <button onclick="closeSuccessPopup()" class="btn btn-primary">OK</button>
                 </div>
             </div>
         </div>
-    </div>
 
 
 

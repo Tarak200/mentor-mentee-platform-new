@@ -421,7 +421,7 @@ class MenteeService {
     // Request mentoring
     async requestMentoring(requestData) {
         try {
-            const { menteeId, mentorId, message, goals, preferredSchedule } = requestData;
+            const { menteeId, mentorId, message, goals, preferredTime: preferredSchedule } = requestData;
 
             // Check if request already exists
             const existingRequest = await db.get(
@@ -430,11 +430,12 @@ class MenteeService {
                 [menteeId, mentorId]
             );
 
-            if (existingRequest) {
-                throw new Error('You already have an active request with this mentor');
-            }
+            // if (existingRequest) {
+            //     throw new Error('You already have an active request with this mentor');
+            // }
 
             const requestId = Date.now().toString();
+            console.log("preferred Schedule:",preferredSchedule);
             
             await db.run(
                 `INSERT INTO mentoring_requests 
