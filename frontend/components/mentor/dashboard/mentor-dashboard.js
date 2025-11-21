@@ -51,13 +51,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('click', async function(e) {
         
         // Handle Accept Button Click
-        if (e.target.closest('.btn-accept')) {
-            const button = e.target.closest('.btn-accept');
+        if (e.target.closest('.btn-accept-modal')) {
+            // console.log("Accept button clicked");
+            const button = e.target.closest('.btn-accept-modal');
             const requestId = button.getAttribute('data-request-id');
-            const firstName = button.getAttribute('data-first-name');
-            const lastName = button.getAttribute('data-last-name');
-            const goals = button.getAttribute('data-goals');
-            const avatar = button.getAttribute('data-avatar');
+
+            // Fetch complete request details from API
+            fetch(`/api/mentor/mentoring-requests/${requestId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch request details');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Show the modal with complete request details
+                    showIncomingRequestModal({
+                        requestId: data.requestId,
+                        mentee: {
+                            firstName: data.firstName,
+                            lastName: data.lastName,
+                            avatar: data.avatar
+                        },
+                        message: data.message
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching request details:', error);
+                    alert('Failed to load request details. Please try again.');
+                });
+
+
+            // const firstName = button.getAttribute('data-first-name');
+            // const lastName = button.getAttribute('data-last-name');
+            // const goals = button.getAttribute('data-goals');
+            // const avatar = button.getAttribute('data-avatar');
             
             // Show the modal with request details
             showIncomingRequestModal({
@@ -388,7 +416,7 @@ async function loadRequests() {
                 </div>
 
                 <div class="request-actions">
-                    <button class="btn btn-accept" data-request-id="${request.id}" data-name="${request.firstName} ${request.lastName}" data-goals="${request.goals || request.message}">
+                    <button class="btn btn-accept-modal" data-request-id="${request.id}" data-name="${request.firstName} ${request.lastName}" data-goals="${request.goals || request.message}">
                         <i class="fas fa-check-circle"></i> Accept Request
                     </button>
                     <button class="btn btn-reject" data-request-id="${request.id}">
@@ -709,14 +737,17 @@ async function loadEarnings() {
                 'Authorization': `Bearer ${token}`
             }
         });
+
+        // console.log("earning response status:", response.ok);
         
         if (response.ok) {
             const earnings = await response.json();
-            document.getElementById('totalEarnings').textContent = `₹${earnings.total_earnings || 0}`;
-            document.getElementById('totalEarningsDetailed').textContent = `₹${earnings.total_earnings || 0}`;
-            document.getElementById('pendingEarnings').textContent = `₹${earnings.pending_earnings || 0}`;
+            // console.log("earning response:", earnings);
+            document.getElementById('totalEarnings').textContent = `₹${earnings.total || 0}`;
+            document.getElementById('totalEarningsDetailed').textContent = `₹${earnings.totalBalance || 0}`;
+            document.getElementById('pendingEarnings').textContent = `₹${earnings.pending || 0}`;
             // document.getElementById('completedSessions').textContent = earnings.total_sessions || 0;
-            document.getElementById('sessionsCount').textContent = earnings.total_sessions || 0;
+            document.getElementById('currentMonthEarnings').textContent = earnings.currentMonth || 0;
         }
     } catch (error) {
         console.error('Error loading earnings:', error);
@@ -964,6 +995,7 @@ function setupRealtime() {
 
 
 function showIncomingRequestModal(payload) {
+    console.log("Showing incoming request modal with payload:", payload);
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.innerHTML = `
@@ -1005,6 +1037,7 @@ function showIncomingRequestModal(payload) {
     // FIND THIS SECTION IN showIncomingRequestModal():
     modal.querySelector('.btn-accept').addEventListener('click', async () => {
         try {
+            console.log("Accepting request with payload:", payload);
             const meetingTimeInput = modal.querySelector('.meeting-time-input');
             const meetingLinkInput = modal.querySelector('.meeting-link-input');
             const meetingTime = meetingTimeInput?.value;
@@ -1028,6 +1061,8 @@ function showIncomingRequestModal(payload) {
                 },
                 body: JSON.stringify(body)  // ← THIS WAS MISSING
             });
+
+            console.log("Response:", resp);
             
             if (resp.ok) {
                 showMessage('Accepted connection request', 'success');
@@ -1651,6 +1686,195 @@ function showEmptyRequestsState() {
         `;
     }
 }
+
+// =====NOTIFICATIONS PANEL =====
+// Open notification modal
+function openNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    loadNotifications();
+}
+
+// Close notification modal
+function closeNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal when pressing ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('notificationModal');
+        if (modal.classList.contains('show')) {
+            closeNotificationModal();
+        }
+    }
+});
+
+// Load notifications from backend
+async function loadNotifications() {
+    const notificationList = document.getElementById('notificationList');
+    
+    try {
+        const response = await fetch('/api/notifications');
+        const notifications = await response.json();
+        
+        const badge = document.getElementById('notificationBadge');
+        
+        // Update badge count
+        const unreadCount = notifications.filter(n => !n.isRead).length;
+        badge.textContent = unreadCount > 0 ? unreadCount : '';
+        
+        // Render notifications
+        if (notifications.length === 0) {
+            notificationList.innerHTML = `
+                <div class="notif-empty">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>No notifications yet</p>
+                </div>
+            `;
+            return;
+        }
+        
+        notificationList.innerHTML = notifications.map(notification => `
+            <div class="notif-item ${notification.isRead ? '' : 'unread'}" 
+                 data-id="${notification.id}"
+                 onclick="handleNotificationClick('${notification.id}')">
+                <div class="notif-icon">
+                    <i class="fas fa-${getNotificationIcon(notification.type)}"></i>
+                </div>
+                <div class="notif-content">
+                    <h4>${notification.title}</h4>
+                    <p>${notification.message}</p>
+                    <span class="notif-time">
+                        <i class="far fa-clock"></i> ${formatTime(notification.created_at)}
+                    </span>
+                </div>
+                ${!notification.isRead ? `
+                    <button class="notif-mark-read-btn" onclick="event.stopPropagation(); markAsRead(this)" title="Mark as read">
+                        <i class="fas fa-check"></i>
+                    </button>
+                ` : ''}
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        notificationList.innerHTML = `
+            <div class="notif-empty">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Failed to load notifications</p>
+            </div>
+        `;
+    }
+}
+
+// Handle notification click
+async function handleNotificationClick(notificationId) {
+    try {
+        await fetch(`/api/notifications/${notificationId}/read`, {
+            method: 'PATCH'
+        });
+        
+        const item = document.querySelector(`[data-id="${notificationId}"]`);
+        if (item) {
+            item.classList.remove('unread');
+            const btn = item.querySelector('.notif-mark-read-btn');
+            if (btn) btn.remove();
+        }
+        
+        updateBadgeCount();
+        
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+// Mark single notification as read
+async function markAsRead(button) {
+    const notificationItem = button.closest('.notif-item');
+    const notificationId = notificationItem.dataset.id;
+    
+    try {
+        await fetch(`/api/notifications/${notificationId}/read`, {
+            method: 'PATCH'
+        });
+        
+        notificationItem.classList.remove('unread');
+        button.remove();
+        updateBadgeCount();
+        
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+// Mark all notifications as read
+async function markAllAsRead() {
+    try {
+        await fetch('/api/notifications/mark-all-read', {
+            method: 'PATCH'
+        });
+        
+        document.querySelectorAll('.notif-item.unread').forEach(item => {
+            item.classList.remove('unread');
+            const button = item.querySelector('.notif-mark-read-btn');
+            if (button) button.remove();
+        });
+        
+        updateBadgeCount();
+        
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+    }
+}
+
+// Update badge count
+function updateBadgeCount() {
+    const unreadCount = document.querySelectorAll('.notif-item.unread').length;
+    const badge = document.getElementById('notificationBadge');
+    badge.textContent = unreadCount > 0 ? unreadCount : '';
+}
+
+// Get icon based on notification type
+function getNotificationIcon(type) {
+    const icons = {
+        'session_booked': 'calendar-check',
+        'session_cancelled': 'calendar-times',
+        'payment_received': 'money-bill-wave',
+        'message': 'envelope',
+        'profile_update': 'user',
+        'reminder': 'bell',
+        'session_reminder': 'clock'
+    };
+    return icons[type] || 'bell';
+}
+
+// Format timestamp
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+    if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+    if (days < 7) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Load notifications when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
+});
+
 
 // ===== DATA MANAGEMENT =====
 function loadDashboardData() {

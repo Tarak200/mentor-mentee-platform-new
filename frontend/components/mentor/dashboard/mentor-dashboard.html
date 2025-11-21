@@ -33,6 +33,12 @@
                         <button class="header-btn" onclick="showCustomerCare()" title="Customer Care">
                             <i class="fas fa-headset"></i>
                         </button>
+                        <!-- Notification Bell Button -->
+                        <button class="header-btn notif-btn" onclick="openNotificationModal()" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notif-badge" id="notificationBadge">3</span>
+                        </button>
+
                         <div class="user-profile">
                             <img id="profilePic" class="profile-avatar" src="backend/uploads/default.jpg" alt="Profile">
                             <div class="profile-dropdown">
@@ -73,7 +79,7 @@
                         <i class="fas fa-rupee-sign"></i>
                         <div>
                             <span id="totalEarnings">₹0</span>
-                            <label>Balance to Receive</label>
+                            <label>Total Earnings</label>
                         </div>
                     </div>
                     <div class="stat-item">
@@ -205,8 +211,8 @@
                                 <i class="fas fa-chart-bar"></i>
                             </div>
                             <div class="earning-details">
-                                <h3 id="sessionsCount">0</h3>
-                                <p>Total Sessions Completed</p>
+                                <h3 id="currentMonthEarnings">0</h3>
+                                <p>Current Month Earnings</p>
                             </div>
                         </div>
                     </div>
@@ -360,6 +366,41 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Notification Modal -->
+        <div id="notificationModal" class="notif-modal">
+            <div class="notif-modal-overlay" onclick="closeNotificationModal()"></div>
+            <div class="notif-modal-content">
+                <!-- Modal Header -->
+                <div class="notif-modal-header">
+                    <h2><i class="fas fa-bell"></i> Notifications</h2>
+                    <div class="notif-modal-actions">
+                        <button class="notif-mark-all-btn" onclick="markAllAsRead()" title="Mark all as read">
+                            <i class="fas fa-check-double"></i> Mark all read
+                        </button>
+                        <button class="notif-close-btn" onclick="closeNotificationModal()" title="Close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Modal Body - Notification List -->
+                <div class="notif-modal-body">
+                    <div class="notif-list" id="notificationList">
+                        <!-- Notifications will be loaded here dynamically -->
+                        <div class="notif-loading">
+                            <i class="fas fa-spinner fa-spin"></i> Loading notifications...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="notif-modal-footer">
+                    <button class="notif-btn-secondary" onclick="closeNotificationModal()">Close</button>
                 </div>
             </div>
         </div>

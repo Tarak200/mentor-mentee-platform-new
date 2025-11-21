@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mentorService = require('../services/mentorService');
 const authMiddleware = require('../middleware/auth');
+const db = require('../services/database');
 
 // Middleware to ensure user is a mentor
 const requireMentor = (req, res, next) => {
@@ -104,7 +105,8 @@ router.get('/sessions', authMiddleware.authenticateToken, requireMentor, async (
 // Get earnings data
 router.get('/earnings', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
-        const mentorId = req.user.id;
+
+        const mentorId = req.user.userId;
         const { period = 'month', year, month } = req.query;
 
         const earnings = await mentorService.getEarnings(mentorId, {
@@ -114,6 +116,7 @@ router.get('/earnings', authMiddleware.authenticateToken, requireMentor, async (
         });
 
         res.json(earnings);
+        // console.log("Earnings data sent:", earnings);
     } catch (error) {
         console.error('Error fetching earnings:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -366,6 +369,45 @@ router.post('/requests/:requestId/accept', authMiddleware.authenticateToken, req
     }
 });
 
+// Get mentoring request with mentee details
+router.get('/mentoring-requests/:requestId', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        
+        const query = `
+            SELECT 
+                mr.id as requestId,
+                mr.message,
+                mr.goals,
+                mr.status,
+                mr.preferredSchedule,
+                mr.created_at,
+                u.firstName,
+                u.lastName,
+                u.avatar,
+                u.email,
+                u.bio,
+                u.skills
+            FROM mentoring_requests mr
+            INNER JOIN users u ON mr.menteeId = u.id
+            WHERE mr.id = ?
+        `;
+        
+        db.get(query, [requestId], (err, row) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            if (!row) {
+                return res.status(404).json({ error: 'Request not found' });
+            }
+            res.json(row);
+        });
+    } catch (error) {
+        console.error('Error fetching request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Decline mentoring request
 router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
@@ -374,8 +416,6 @@ router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, re
         // console.log("mentorId:", mentorId);
         const { requestId } = req.params;
         const { reason } = req.body;
-
-        const db = require('../services/database');
         const reqRow = await db.get('SELECT menteeId, mentorId, status FROM mentoring_requests WHERE id = ? AND mentorId = ?', [requestId, mentorId]);
         if (!reqRow) {
             return res.status(404).json({ error: 'Request not found' });

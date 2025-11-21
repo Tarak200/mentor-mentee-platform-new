@@ -115,7 +115,7 @@ class DatabaseService {
                 FOREIGN KEY (menteeId) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
-            // Mentoring requests table
+            // Mentoring requests table and the id is the request id
             `CREATE TABLE IF NOT EXISTS mentoring_requests (
                 id TEXT PRIMARY KEY,
                 mentorId TEXT NOT NULL,

@@ -455,48 +455,108 @@ class MentorService {
 
     // Get earnings data
     async getEarnings(mentorId, options = {}) {
-        try {
-            const { period = 'month', year, month } = options;
-            
-            // Get current month earnings
-            const currentMonth = await db.get(
-                `SELECT SUM(amount) as currentMonth 
-                 FROM mentoring_sessions 
-                 WHERE mentorId = ? AND status = 'completed'
-                 AND datetime(scheduledAt) >= datetime('now', 'start of month')`,
-                [mentorId]
-            );
+    try {
+        const { period = 'month', year, month } = options;
+        
+        // Now run your actual queries with fixed datetime handling
+        // Get current month earnings
+        const currentMonth = await db.get(
+            `SELECT COALESCE(SUM(amount), 0) as currentMonth 
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'completed'
+             AND date(scheduledAt) >= date('now', 'start of month')`,
+            [mentorId]
+        );
 
-            // Get total earnings
-            const total = await db.get(
-                `SELECT SUM(amount) as total 
-                 FROM mentoring_sessions 
-                 WHERE mentorId = ? AND status = 'completed'`,
-                [mentorId]
-            );
+        // Get previous month earnings
+        const previousMonth = await db.get(
+            `SELECT COALESCE(SUM(amount), 0) as previousMonth 
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'completed'
+             AND date(scheduledAt) >= date('now', 'start of month', '-1 month')
+             AND date(scheduledAt) < date('now', 'start of month')`,
+            [mentorId]
+        );
 
-            // Get pending payments
-            const pending = await db.get(
-                `SELECT SUM(amount) as pending 
-                 FROM mentoring_sessions 
-                 WHERE mentorId = ? AND status = 'completed' AND paymentStatus != 'paid'`,
-                [mentorId]
-            );
-
-            return {
-                currentMonth: currentMonth.currentMonth || 0,
-                total: total.total || 0,
-                pending: pending.pending || 0,
-                change: 0, // Calculate based on previous month comparison
-                totalSessions: 0,
-                pendingSessions: 0,
-                transactions: []
-            };
-        } catch (error) {
-            console.error('Error fetching earnings:', error);
-            throw new Error('Failed to fetch earnings data');
+        // Calculate change
+        let change = 0;
+        if (previousMonth.previousMonth > 0) {
+            change = ((currentMonth.currentMonth - previousMonth.previousMonth) / previousMonth.previousMonth) * 100;
         }
+
+        // Get total earnings
+        const total = await db.get(
+            `SELECT COALESCE(SUM(amount), 0) as total 
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'completed'`,
+            [mentorId]
+        );
+
+        // Get pending payments
+        const pending = await db.get(
+            `SELECT COALESCE(SUM(amount), 0) as pending 
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'completed' AND paymentStatus = 'pending'`,
+            [mentorId]
+        );
+
+        // Get total completed sessions
+        const totalSessions = await db.get(
+            `SELECT COUNT(*) as count 
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'completed'`,
+            [mentorId]
+        );
+
+        // Get pending sessions
+        const pendingSessions = await db.get(
+            `SELECT COUNT(*) as count 
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'upcoming'
+             AND datetime(scheduledAt) > datetime('now')`,
+            [mentorId]
+        );
+
+        // Get future calls amount
+        const futureCallsAmount = await db.get(
+            `SELECT COALESCE(SUM(amount), 0) as futureAmount 
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'upcoming'
+             AND datetime(scheduledAt) > datetime('now')`,
+            [mentorId]
+        );
+
+        // Calculate balance after commission
+        const totalBalance = pending.pending;
+
+        // Get transactions
+        const transactions = await db.all(
+            `SELECT id, menteeId, title, amount, scheduledAt, status, paymentStatus
+             FROM mentoring_sessions 
+             WHERE mentorId = ? AND status = 'completed'
+             ORDER BY scheduledAt DESC
+             LIMIT 10`,
+            [mentorId]
+        );
+
+        return {
+            currentMonth: currentMonth.currentMonth,
+            total: total.total,
+            pending: pending.pending,
+            totalBalance: totalBalance,
+            change: Math.round(change * 100) / 100,
+            totalSessions: totalSessions.count,
+            pendingSessions: pendingSessions.count,
+            futureCallsAmount: futureCallsAmount.futureAmount,
+            transactions: transactions
+        };
+    } catch (error) {
+        console.error('Error fetching earnings:', error);
+        throw new Error('Failed to fetch earnings data');
     }
+}
+
+
 }
 
 module.exports = new MentorService();
