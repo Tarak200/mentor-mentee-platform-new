@@ -1878,3 +1878,82 @@ body.mentor-body {
         display: none;
     }
 }
+
+
+/* EDITABLE PROFILE  */
+
+.profile-edit-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: flex-end;
+}
+
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.profile-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.profile-field label {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.field-value {
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    min-height: 40px;
+}
+
+.field-value.read-only {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.field-edit {
+    padding: 10px;
+    border: 2px solid #007bff;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.field-edit:focus {
+    outline: none;
+    border-color: #0056b3;
+}
+
+.profile-edit-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: flex-end;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}

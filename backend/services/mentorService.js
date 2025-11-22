@@ -453,6 +453,94 @@ class MentorService {
         }
     }
 
+
+    // update mentor profile
+    async updateProfile(mentorId, profileData) {
+        try {
+            const { name, phone, skills, bio, availableHours, hourlyRate, education, institution, languages, subjects } = profileData;
+
+            // Split name into first and last name
+            const nameParts = name.trim().split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            // Update query
+            const updateQuery = `
+                UPDATE users 
+                SET 
+                    firstName = ?,
+                    lastName = ?,
+                    phone = ?,
+                    current_pursuit = ?,
+                    institution = ?,
+                    languages = ?,
+                    subjects = ?,
+                    hourlyRate = ?,
+                    bio = ?,
+                    skills = ?,
+                    updated_at = CURRENT_TIMESTAMP,
+                    available_hours = ?
+                WHERE id = ? AND role = 'mentor'
+            `;
+
+            const values = [
+                firstName,
+                lastName,
+                phone || null,
+                education || null,
+                institution || null,
+                languages || null,
+                subjects || null,
+                hourlyRate || null,
+                bio || null,
+                skills || null,
+                availableHours || null,
+                mentorId
+            ];
+
+            const result = await db.run(updateQuery, values);
+
+            if (result.changes === 0) {
+                throw new Error('Mentor profile not found or update failed');
+            }
+
+            // Fetch updated profile
+            const updatedUser = await db.get(
+                `SELECT 
+                    id,
+                    firstName,
+                    lastName,
+                    email,
+                    phone,
+                    education,
+                    institution,
+                    current_pursuit as specialization,
+                    bio,
+                    profile_picture, 
+                    hourlyRate,
+                    skills,
+                    languages,
+                    subjects,
+                    available_hours
+
+                FROM users 
+                WHERE id = ?`,
+                [mentorId]
+            );
+
+            return {
+                success: true,
+                message: 'Profile updated successfully',
+                user: updatedUser[0]
+            };
+
+        } catch (error) {
+            console.error('Error in updateProfile service:', error);
+            throw error;
+        }
+    }
+
+
     // Get earnings data
     async getEarnings(mentorId, options = {}) {
     try {

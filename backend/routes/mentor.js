@@ -123,6 +123,51 @@ router.get('/earnings', authMiddleware.authenticateToken, requireMentor, async (
     }
 });
 
+// Update mentor profile
+router.put('/profile/update', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
+    try {
+        const mentorId = req.user.userId;
+        const { 
+            name, 
+            phone, 
+            skills, 
+            bio, 
+            availableHours, 
+            hourlyRate, 
+            education, 
+            institution, 
+            languages, 
+            subjects 
+        } = req.body;
+
+        // Validation
+        if (!name || name.trim() === '') {
+            return res.status(400).json({ 
+                error: 'Name is required' 
+            });
+        }
+
+        const updatedProfile = await mentorService.updateProfile(mentorId, {
+            name,
+            phone,
+            skills,
+            bio,
+            availableHours,
+            hourlyRate,
+            education,
+            institution,
+            languages,
+            subjects
+        });
+
+        res.json(updatedProfile);
+    } catch (error) {
+        console.error('Error updating mentor profile:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
 // GET /api/mentor/:mentorId
 router.get('/:mentorId', authMiddleware.authenticateToken, async (req, res) => {
   try {

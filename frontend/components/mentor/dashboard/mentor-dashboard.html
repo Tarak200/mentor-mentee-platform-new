@@ -272,7 +272,7 @@
                     <div class="profile-content">
                         <div class="profile-card">
                             <div class="profile-picture-section">
-                                <img id="profilePicLarge" src="backend/uploads/default.jpg" alt="Profile Picture">
+                                <img id="profilePicLarge" src="../uploads/default.jpg" alt="Profile Picture">
                                 <div class="profile-upload">
                                     <input type="file" id="profilePicUpload" accept="image/*" hidden>
                                     <button onclick="document.getElementById('profilePicUpload').click()" class="btn btn-upload">
@@ -282,9 +282,107 @@
                             </div>
                             
                             <div id="profileDetails" class="profile-details">
-                                <div class="loading-profile">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <p>Loading your profile...</p>
+                                <div class="profile-edit-controls">
+                                    <button id="editProfileBtn" class="btn btn-primary" onclick="toggleProfileEdit()">
+                                        <i class="fas fa-edit"></i> Edit Profile
+                                    </button>
+                                    <button id="saveProfileBtn" class="btn btn-success" style="display: none;" onclick="saveProfile()">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                    <button id="cancelProfileBtn" class="btn btn-secondary" style="display: none;" onclick="cancelProfileEdit()">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                                
+                                <div class="profile-info-grid">
+                                    <!-- Name - Editable -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-user"></i> Full Name</label>
+                                        <span id="nameDisplay" class="field-value read-only"></span>
+                                        <!-- <input type="text" id="nameEdit" class="field-edit" style="display: none;"> -->
+                                    </div>
+                                    
+                                    <!-- Email - Read-only -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-envelope"></i> Email</label>
+                                        <span id="emailDisplay" class="field-value read-only"></span>
+                                    </div>
+                                    
+                                    <!-- Phone - Editable -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-phone"></i> Phone</label>
+                                        <span id="phoneDisplay" class="field-value"></span>
+                                        <input type="tel" id="phoneEdit" class="field-edit" style="display: none;">
+                                    </div>
+                                    
+                                    <!-- Education - Read-only -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-graduation-cap"></i> Education</label>
+                                        <span id="educationDisplay" class="field-value read-only"></span>
+                                    </div>
+                                    
+                                    <!-- Institution - Read-only -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-university"></i> Institution</label>
+                                        <span id="institutionDisplay" class="field-value read-only"></span>
+                                    </div>
+                                    
+                                    <!-- Specialization - Editable -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-briefcase"></i> Specialization</label>
+                                        <span id="specializationDisplay" class="field-value"></span>
+                                        <input type="text" id="specializationEdit" class="field-edit" style="display: none;">
+                                    </div>
+
+                                    <!-- current pursuit - Editable -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-briefcase"></i> Current Pursuit</label>
+                                        <span id="currentPursuitDisplay" class="field-value"></span>
+                                        <input type="text" id="currentPursuitEdit" class="field-edit" style="display: none;">
+                                    </div>
+                                    
+                                    <!-- Experience - Editable -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-clock"></i> UPI Id</label>
+                                        <span id="upiIdDisplay" class="field-value"></span>
+                                        <input type="text" id="upiIdEdit" class="field-edit" style="display: none;">
+                                    </div>
+                                    
+                                    <!-- Bio - Editable -->
+                                    <div class="profile-field full-width">
+                                        <label><i class="fas fa-info-circle"></i> Bio</label>
+                                        <span id="bioDisplay" class="field-value"></span>
+                                        <textarea id="bioEdit" class="field-edit" rows="4" style="display: none;"></textarea>
+                                    </div>
+
+                                    <!-- Hourly Rate - Editable -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-rupee-sign"></i> Hourly Rate</label>
+                                        <span id="hourlyRateDisplay" class="field-value"></span>
+                                        <input type="number" id="hourlyRateEdit" class="field-edit" style="display: none;" placeholder="Enter hourly rate">
+                                    </div>
+
+                                    <!-- Languages - Editable -->
+                                    <div class="profile-field">
+                                        <label><i class="fas fa-language"></i> Languages</label>
+                                        <span id="languagesDisplay" class="field-value"></span>
+                                        <input type="text" id="languagesEdit" class="field-edit" style="display: none;" placeholder="e.g., English, Hindi, Spanish">
+                                    </div>
+
+                                    <!-- Teaching Subjects - Editable -->
+                                    <div class="profile-field full-width">
+                                        <label><i class="fas fa-book"></i> Teaching Subjects</label>
+                                        <span id="subjectsDisplay" class="field-value"></span>
+                                        <input type="text" id="subjectsEdit" class="field-edit" style="display: none;" placeholder="e.g., Mathematics, Physics, Chemistry">
+                                    </div>
+
+                                    <!-- Available Hours - Editable -->
+                                    <div class="profile-field full-width">
+                                        <label><i class="fas fa-clock"></i> Available Hours</label>
+                                        <span id="availableHoursDisplay" class="field-value"></span>
+                                        <input type="text" id="availableHoursEdit" class="field-edit" style="display: none;" placeholder="e.g., Monday 9AM-5PM, Tuesday 2PM-8PM">
+                                    </div>
+
                                 </div>
                             </div>
                         </div>

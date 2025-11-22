@@ -153,6 +153,7 @@ document.addEventListener('click', (e) => {
 });
 
 // loading profile in mentor dashboard
+// Fixed loadProfile function - populates the new editable profile fields
 async function loadProfile() {
     try {
         const response = await fetch('/api/user/profile', {
@@ -163,7 +164,8 @@ async function loadProfile() {
         
         if (response.ok) {
             const user = await response.json();
-            // console.log("profile details:", user);
+            console.log("profile details:", user);
+            // Update header profile info
             document.getElementById('userName').textContent = user.first_name;
             document.getElementById('userNameShort').textContent = user.first_name;
             document.getElementById('mentorUpiId').textContent = user.upi_id || 'Not set';
@@ -173,66 +175,90 @@ async function loadProfile() {
                 document.getElementById('profilePicLarge').src = user.profile_picture;
             }
             
-            // Display enhanced profile details
-            const profileDetails = `
-                <div class="profile-grid">
-                    <div class="profile-item">
-                        <label>Full Name</label>
-                        <span>${user.first_name} ${user.last_name}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Email</label>
-                        <span>${user.email}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Education</label>
-                        <span>${user.education || 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Institution</label>
-                        <span>${user.institution || 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Current Pursuit</label>
-                        <span>${user.current_pursuit || 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Hourly Rate</label>
-                        <span class="price-highlight">₹${user.hourlyRate}/hour</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Languages</label>
-                        <span>${user.languages ? user.languages.join(', ') : 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Teaching Subjects</label>
-                        <span>${user.subjects ? user.subjects.join(', ') : 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Available Hours</label>
-                        <span>${user.available_hours ? user.available_hours.join(', ') : 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Mobile</label>
-                        <span>${user.phone || 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>Gender</label>
-                        <span>${user.gender || 'Not specified'}</span>
-                    </div>
-                    <div class="profile-item">
-                        <label>UPI ID</label>
-                        <span>${user.upi_id || 'Not set'}</span>
-                    </div>
-                    ${user.qualifications ? `
-                        <div class="profile-item full-width">
-                            <label>Qualifications & Experience</label>
-                            <span>${user.qualifications}</span>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-            document.getElementById('profileDetails').innerHTML = profileDetails;
+            // Populate the NEW editable profile fields
+            // Name (editable)
+            const fullName = `${user.first_name} ${user.last_name}`;
+            if (document.getElementById('nameDisplay')) {
+                document.getElementById('nameDisplay').textContent = fullName;
+                // document.getElementById('nameEdit').value = fullName;
+            }
+            
+            // Email (read-only)
+            if (document.getElementById('emailDisplay')) {
+                document.getElementById('emailDisplay').textContent = user.email || 'Not set';
+            }
+            
+            // Phone (editable)
+            if (document.getElementById('phoneDisplay')) {
+                document.getElementById('phoneDisplay').textContent = user.phone || 'Not set';
+                document.getElementById('phoneEdit').value = user.phone || '';
+            }
+            
+            // Education (read-only)
+            if (document.getElementById('educationDisplay')) {
+                document.getElementById('educationDisplay').textContent = user.education || 'Not specified';
+            }
+            
+            // Institution (read-only)
+            if (document.getElementById('institutionDisplay')) {
+                document.getElementById('institutionDisplay').textContent = user.institution || 'Not specified';
+            }
+            
+            // Specialization (editable) - using subjects or current_pursuit
+            if (document.getElementById('specializationDisplay')) {
+                const specialization = user.subjects ? user.subjects.join(', ') : (user.current_pursuit || 'Not set');
+                document.getElementById('specializationDisplay').textContent = specialization;
+                document.getElementById('specializationEdit').value = specialization;
+            }
+
+            if(document.getElementById('currentPursuitDisplay')) {  
+                const currentPursuit = user.current_pursuit || 'Not set';
+                document.getElementById('currentPursuitDisplay').textContent = currentPursuit;
+                document.getElementById('currentPursuitEdit').value = currentPursuit;
+            }
+            
+            // Experience (editable)
+            if (document.getElementById('upiIdDisplay')) {
+                const upi_id = user.upi_id || 'Not set'; 
+                document.getElementById('upiIdDisplay').textContent = upi_id;
+                document.getElementById('upiIdEdit').value = upi_id;
+            }
+            
+            // Bio (editable)
+            if (document.getElementById('bioDisplay')) {
+                const bio = user.bio || user.qualifications || 'Not set';
+                document.getElementById('bioDisplay').textContent = bio;
+                document.getElementById('bioEdit').value = bio;
+            }
+
+            // Hourly Rate (editable)
+            if (document.getElementById('hourlyRateDisplay')) {
+                const hourlyRate = user.hourlyRate || 'Not set';
+                document.getElementById('hourlyRateDisplay').textContent = hourlyRate ? `₹${hourlyRate}/hour` : 'Not set';
+                document.getElementById('hourlyRateEdit').value = user.hourlyRate || '';
+            }
+
+            // Languages (editable)
+            if (document.getElementById('languagesDisplay')) {
+                const languages = user.languages ? user.languages.join(', ') : 'Not specified';
+                document.getElementById('languagesDisplay').textContent = languages;
+                document.getElementById('languagesEdit').value = user.languages ? user.languages.join(', ') : '';
+            }
+
+            // Teaching Subjects (editable)
+            if (document.getElementById('subjectsDisplay')) {
+                const subjects = user.subjects ? user.subjects.join(', ') : 'Not specified';
+                document.getElementById('subjectsDisplay').textContent = subjects;
+                document.getElementById('subjectsEdit').value = user.subjects ? user.subjects.join(', ') : '';
+            }
+
+            // Available Hours (editable)
+            if (document.getElementById('availableHoursDisplay')) {
+                const availableHours = user.available_hours ? user.available_hours.join(', ') : 'Not specified';
+                document.getElementById('availableHoursDisplay').textContent = availableHours;
+                document.getElementById('availableHoursEdit').value = user.available_hours ? user.available_hours.join(', ') : '';
+            }
+
         }
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -1473,6 +1499,218 @@ function animateStatCards() {
         }, 30);
     });
 }
+
+// ======== PROFILE EDITABLE VERSION ====================
+
+let originalProfileData = {};
+let editMode = false;
+
+// Toggle between edit and view modes
+function toggleProfileEdit() {
+    editMode = !editMode;
+    
+    if (editMode) {
+        // Safely get all display elements
+        const nameDisplay = document.getElementById('nameDisplay');
+        const phoneDisplay = document.getElementById('phoneDisplay');
+        const specializationDisplay = document.getElementById('specializationDisplay');
+        const experienceDisplay = document.getElementById('experienceDisplay');
+        const bioDisplay = document.getElementById('bioDisplay');
+        const hourlyRateDisplay = document.getElementById('hourlyRateDisplay');
+        const languagesDisplay = document.getElementById('languagesDisplay');
+        const subjectsDisplay = document.getElementById('subjectsDisplay');
+        const availableHoursDisplay = document.getElementById('availableHoursDisplay');
+        const upiIdDisplay = document.getElementById('upiIdDisplay');
+        const currentPursuitDisplay = document.getElementById('currentPursuitDisplay');
+        
+        // Store original data for cancel functionality
+        originalProfileData = {
+            name: nameDisplay ? nameDisplay.textContent : '',
+            phone: phoneDisplay ? phoneDisplay.textContent : '',
+            specialization: specializationDisplay ? specializationDisplay.textContent : '',
+            experience: experienceDisplay ? experienceDisplay.textContent : '',
+            bio: bioDisplay ? bioDisplay.textContent : '',
+            hourlyRate: hourlyRateDisplay ? hourlyRateDisplay.textContent.replace('₹', '').replace('/hour', '').trim() : '',
+            languages: languagesDisplay ? languagesDisplay.textContent : '',
+            subjects: subjectsDisplay ? subjectsDisplay.textContent : '',
+            availableHours: availableHoursDisplay ? availableHoursDisplay.textContent : '',
+            upiId: upiIdDisplay ? upiIdDisplay.textContent.replace('Not specified', '').trim() : '',
+            currentPursuit: currentPursuitDisplay ? currentPursuitDisplay.textContent : ''
+        };
+        
+        // Populate edit fields with current values
+        // const nameEdit = document.getElementById('nameEdit');
+        const phoneEdit = document.getElementById('phoneEdit');
+        const specializationEdit = document.getElementById('specializationEdit');
+        const experienceEdit = document.getElementById('experienceEdit');
+        const bioEdit = document.getElementById('bioEdit');
+        const hourlyRateEdit = document.getElementById('hourlyRateEdit');
+        const languagesEdit = document.getElementById('languagesEdit');
+        const subjectsEdit = document.getElementById('subjectsEdit');
+        const availableHoursEdit = document.getElementById('availableHoursEdit');
+        const upiIdEdit = document.getElementById('upiIdEdit');
+        const currentPursuitEdit = document.getElementById('currentPursuitEdit');
+        
+        // if (nameEdit) nameEdit.value = originalProfileData.name;
+        if (phoneEdit) phoneEdit.value = originalProfileData.phone;
+        if (specializationEdit) specializationEdit.value = originalProfileData.specialization;
+        if (experienceEdit) experienceEdit.value = originalProfileData.experience;
+        if (bioEdit) bioEdit.value = originalProfileData.bio;
+        if (hourlyRateEdit) hourlyRateEdit.value = originalProfileData.hourlyRate;
+        if (languagesEdit) languagesEdit.value = originalProfileData.languages;
+        if (subjectsEdit) subjectsEdit.value = originalProfileData.subjects;
+        if (availableHoursEdit) availableHoursEdit.value = originalProfileData.availableHours;
+        if (upiIdEdit) upiIdEdit.value = originalProfileData.upiId;
+        if (currentPursuitEdit) currentPursuitEdit.value = originalProfileData.currentPursuit;
+        
+        // Show edit fields, hide display fields
+        toggleFields(true);
+        
+        // Toggle buttons
+        const editBtn = document.getElementById('editProfileBtn');
+        const saveBtn = document.getElementById('saveProfileBtn');
+        const cancelBtn = document.getElementById('cancelProfileBtn');
+        
+        if (editBtn) editBtn.style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'inline-block';
+        if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    }
+}
+
+
+// Toggle between display and edit fields
+function toggleFields(isEdit) {
+    const editableFields = ['name', 'phone', 'specialization', 'experience', 'bio', 'hourlyRate', 'languages', 'subjects', 'availableHours', 'upiId', 'currentPursuit'];
+    
+    editableFields.forEach(field => {
+        const displayElement = document.getElementById(`${field}Display`);
+        const editElement = document.getElementById(`${field}Edit`);
+        
+        // Check if elements exist before trying to modify them
+        if (displayElement && editElement) {
+            if (isEdit) {
+                displayElement.style.display = 'none';
+                editElement.style.display = 'block';
+            } else {
+                displayElement.style.display = 'block';
+                editElement.style.display = 'none';
+            }
+        }
+    });
+}
+
+
+// Save profile changes
+async function saveProfile() {
+    // Safely get all edit elements
+    // const nameEdit = document.getElementById('nameEdit');
+    const phoneEdit = document.getElementById('phoneEdit');
+    const specializationEdit = document.getElementById('specializationEdit');
+    const institutionDisplay = document.getElementById('institutionDisplay');
+    const educationDisplay = document.getElementById('educationDisplay');
+    const emailDisplay = document.getElementById('emailDisplay');
+    const experienceEdit = document.getElementById('experienceEdit');
+    const bioEdit = document.getElementById('bioEdit');
+    const hourlyRateEdit = document.getElementById('hourlyRateEdit');
+    const languagesEdit = document.getElementById('languagesEdit');
+    const subjectsEdit = document.getElementById('subjectsEdit');
+    const availableHoursEdit = document.getElementById('availableHoursEdit');
+    const upiIdEdit = document.getElementById('upiIdEdit');
+    const currentPursuitEdit = document.getElementById('currentPursuitEdit');
+    
+    const updatedData = {
+        name: nameDisplay ? nameDisplay.textContent.trim() : '',
+        phone: phoneEdit ? phoneEdit.value.trim() : '',
+        skills: specializationEdit ? specializationEdit.value.trim() : '',
+        institution: institutionDisplay ? institutionDisplay.textContent.trim() : '',
+        education: educationDisplay ? educationDisplay.textContent.trim() : '',
+        email: emailDisplay ? emailDisplay.textContent.trim() : '',
+        experience: experienceEdit ? experienceEdit.value.trim() : '',
+        bio: bioEdit ? bioEdit.value.trim() : '',
+        hourlyRate: hourlyRateEdit ? hourlyRateEdit.value.trim() : '',
+        languages: languagesEdit ? languagesEdit.value.trim() : '',
+        subjects: subjectsEdit ? subjectsEdit.value.trim() : '',
+        availableHours: availableHoursEdit ? availableHoursEdit.value.trim() : '',
+        upiId: upiIdEdit ? upiIdEdit.value.trim() : '',
+        current_pursuit : currentPursuitEdit ? currentPursuitEdit.value.trim() : ''
+    };
+    
+    // Validate fields
+    if (!updatedData.name) {
+        alert('Name is required');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/mentor/profile/update', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updatedData)
+        });
+        
+        if (response.ok) {
+            // Safely update display fields with new values
+            const nameDisplay = document.getElementById('nameDisplay');
+            const phoneDisplay = document.getElementById('phoneDisplay');
+            const specializationDisplay = document.getElementById('specializationDisplay');
+            const experienceDisplay = document.getElementById('experienceDisplay');
+            const bioDisplay = document.getElementById('bioDisplay');
+            const hourlyRateDisplay = document.getElementById('hourlyRateDisplay');
+            const languagesDisplay = document.getElementById('languagesDisplay');
+            const subjectsDisplay = document.getElementById('subjectsDisplay');
+            const availableHoursDisplay = document.getElementById('availableHoursDisplay');
+            const upiIdDisplay = document.getElementById('upiIdDisplay');
+            const currentPursuitDisplay = document.getElementById('currentPursuitDisplay');
+            
+            if (nameDisplay) nameDisplay.textContent = updatedData.name;
+            if (phoneDisplay) phoneDisplay.textContent = updatedData.phone;
+            if (specializationDisplay) specializationDisplay.textContent = updatedData.skills;
+            if (experienceDisplay) experienceDisplay.textContent = updatedData.experience;
+            if (bioDisplay) bioDisplay.textContent = updatedData.bio;
+            if (hourlyRateDisplay) hourlyRateDisplay.textContent = updatedData.hourlyRate ? `₹${updatedData.hourlyRate}/hour` : 'Not set';
+            if (languagesDisplay) languagesDisplay.textContent = updatedData.languages || 'Not specified';
+            if (subjectsDisplay) subjectsDisplay.textContent = updatedData.subjects || 'Not specified';
+            if (availableHoursDisplay) availableHoursDisplay.textContent = updatedData.availableHours || 'Not specified';
+            if (upiIdDisplay) upiIdDisplay.textContent = updatedData.upiId || 'Not specified';
+            if( currentPursuitDisplay) currentPursuitDisplay.textContent = updatedData.current_pursuit || 'Not specified';
+            
+            // Exit edit mode
+            editMode = false;
+            toggleFields(false);
+            
+            const editBtn = document.getElementById('editProfileBtn');
+            const saveBtn = document.getElementById('saveProfileBtn');
+            const cancelBtn = document.getElementById('cancelProfileBtn');
+            
+            if (editBtn) editBtn.style.display = 'inline-block';
+            if (saveBtn) saveBtn.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            
+            showNotification('Profile updated successfully', 'success');
+        } else {
+            const error = await response.json();
+            showNotification(error.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showNotification('An error occurred while updating profile', 'error');
+    }
+}
+
+// Cancel edit mode
+function cancelProfileEdit() {
+    editMode = false;
+    toggleFields(false);
+    
+    // Reset buttons
+    document.getElementById('editProfileBtn').style.display = 'inline-block';
+    document.getElementById('saveProfileBtn').style.display = 'none';
+    document.getElementById('cancelProfileBtn').style.display = 'none';
+}
+
 
 // ===== NOTIFICATION SYSTEM =====
 function setupNotifications() {
