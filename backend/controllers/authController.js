@@ -8,8 +8,9 @@ const { generateId } = require('../utils/helpers');
 class AuthController {
     // User registration
     async register(req, res) {
+        console.log("Register request body:", req.body); 
         try {
-            const { firstName, lastName, email, password, role } = req.body;
+            const { firstName, lastName, email, password, role, age, bio, gender, mobile, education, institution, currentPursuing, languages, availability, hourlyRate, upiId, profile_picture, avatar, skills, subjects } = req.body;
 
             // Validate input
             if (!firstName || !lastName || !email || !password || !role) {
@@ -59,8 +60,8 @@ class AuthController {
             await db.run(
                 `INSERT INTO users (
                     id, firstName, lastName, email, password, role, 
-                    isActive, emailVerified, settings, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?)`,
+                    isActive, emailVerified, settings, created_at, updated_at, age, bio, gender, phone, education, institution, current_pursuit, languages, available_hours, hourlyRate, upi_id, profile_picture, avatar, rating, qualifications, skills, subjects
+                ) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     userId, 
                     sanitizeInput(firstName), 
@@ -74,7 +75,24 @@ class AuthController {
                         theme: 'light'
                     }),
                     now, 
-                    now
+                    now,
+                    age || null,
+                    bio ? sanitizeInput(bio) : null,   
+                    gender ? sanitizeInput(gender) : null,
+                    mobile ? sanitizeInput(mobile) : null,
+                    education ? sanitizeInput(education) : null,
+                    institution ? sanitizeInput(institution) : null,
+                    currentPursuing ? sanitizeInput(currentPursuing) : null,
+                    languages ? JSON.stringify(languages) : null,
+                    availability ? JSON.stringify(availability) : null,
+                    hourlyRate || null,
+                    upiId ? sanitizeInput(upiId) : null,
+                    profile_picture ? sanitizeInput(profile_picture) : "/uploads/default.jpg",
+                    avatar ? sanitizeInput(avatar) : "/uploads/default.jpg",
+                    5.0,
+                    bio ? sanitizeInput(bio) : null,
+                    skills ? sanitizeInput(skills) : null,
+                    subjects ? sanitizeInput(subjects) : null
                 ]
             );
 

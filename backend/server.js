@@ -91,6 +91,21 @@ app.get('/mentee/login', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'login', 'mentee-login.html'));
 });
 
+// Registration pages
+app.get('/mentor/register', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentor', 'register', 'register.html'));
+});     
+// app.get('/mentee/register', (req, res) => {
+//     res.setHeader('Content-Type', 'text/html');
+//     res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'register', 'menregister.html'));
+// });
+
+app.get('/mentee/login', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'components', 'mentee', 'login', 'mentee-login.html'));
+});
+
 // Forgot Password pages
 app.get('/mentor/forgot-password', (req, res) => {
     res.setHeader('Content-Type', 'text/html');

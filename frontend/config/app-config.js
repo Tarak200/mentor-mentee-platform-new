@@ -72,6 +72,31 @@ class AppConfig {
             title: 'Register - Mentor-Mentee Platform'
         });
 
+        // Role-specific registration components
+        this.components.set('mentor-register', {
+            path: '/components/mentor/register',
+            files: {
+                html: 'register.html',
+                css: 'register.css',
+                js: 'register.js',
+                security: 'register-security.js'
+            },
+            dependencies: ['shared'],
+            title: 'Register - Mentor-Mentee Platform'
+        });
+
+        this.components.set('mentee-register', {
+            path: '/components/mentee/register',
+            files: {
+                html: 'register.html',
+                css: 'register.css',
+                js: 'register.js',
+                security: 'register-security.js'
+            },
+            dependencies: ['shared'],
+            title: 'Register - Mentor-Mentee Platform'
+        });
+
         // Dashboard components
         this.components.set('mentor-dashboard', {
             path: '/components/mentor-dashboard',
@@ -178,6 +203,8 @@ class AppConfig {
         this.routes.set('/mentee-dashboard', 'mentee-dashboard');
         this.routes.set('/mentor/login', 'login');
         this.routes.set('/mentee/login', 'login');
+        this.routes.set('/mentor/register', 'mentor-register');
+        this.routes.set('/mentee/register', 'mentee-register');
 
         // Forgot password routes
         this.routes.set('/mentor/forgot-password', 'mentor-forgot-password');
