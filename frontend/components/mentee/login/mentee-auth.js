@@ -1,5 +1,5 @@
 /**
- * Mentee Authentication System - Merged and Optimized
+ * Mentee Authentication System - Optimized and Conflict-Free
  * Handles authentication, form validation, and navigation with proper token validation
  */
 
@@ -24,10 +24,14 @@ class MenteeLogin {
             registerForm.addEventListener('submit', (e) => this.handleRegister(e));
         }
 
-        // Password visibility toggle - setup initial state
+        // Password visibility toggle - using event delegation
         document.querySelectorAll('.password-toggle').forEach(btn => {
+            btn.setAttribute('type', 'button'); // Prevent form submission
             btn.setAttribute('title', 'Show password');
-            btn.addEventListener('click', (e) => this.togglePasswordVisibility(e));
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handlePasswordToggle(e.currentTarget);
+            });
         });
 
         // Form field validation
@@ -43,15 +47,44 @@ class MenteeLogin {
         this.setupRealTimeValidation();
         
         // Handle browser back/forward
-        window.addEventListener('popstate', function(e) {
+        window.addEventListener('popstate', (e) => {
             if (e.state && e.state.form) {
                 if (e.state.form === 'register') {
-                    showRegisterForm();
+                    this.showRegisterForm();
                 } else {
-                    showLoginForm();
+                    this.showLoginForm();
                 }
             }
         });
+    }
+
+    // Password toggle handler
+    handlePasswordToggle(button) {
+        const input = button.parentElement.querySelector('input[type="password"], input[type="text"]');
+        if (!input) {
+            console.error('Password input not found');
+            return;
+        }
+
+        const icon = button.querySelector('i');
+        if (!icon) {
+            console.error('Password toggle icon not found');
+            return;
+        }
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+            button.setAttribute('title', 'Hide password');
+            button.setAttribute('aria-label', 'Hide password');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+            button.setAttribute('title', 'Show password');
+            button.setAttribute('aria-label', 'Show password');
+        }
     }
 
     // Check if user already logged in with token validation
@@ -75,11 +108,9 @@ class MenteeLogin {
                     if (data.valid && data.userType === 'mentee') {
                         window.location.href = '/mentee-dashboard';
                     } else {
-                        // Invalid token, clear storage
                         this.clearAuthData();
                     }
                 } else {
-                    // Token validation failed, clear storage
                     this.clearAuthData();
                 }
             } catch (error) {
@@ -89,7 +120,7 @@ class MenteeLogin {
         }
     }
 
-    // Handle login form submission with proper error handling
+    // Handle login form submission
     async handleLogin(event) {
         event.preventDefault();
 
@@ -135,6 +166,7 @@ class MenteeLogin {
                 localStorage.setItem('userType', 'mentee');
                 localStorage.setItem('userId', userId);
                 localStorage.setItem('userName', userName);
+                localStorage.setItem('tokenTimestamp', Date.now().toString());
 
                 if (remember) {
                     localStorage.setItem('rememberEmail', email);
@@ -155,7 +187,135 @@ class MenteeLogin {
             this.setLoadingState(false);
         }
     }
-    
+
+    // Handle registration form submission
+    async handleRegister(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+
+        // Validate all fields
+        if (!this.validateRegistrationForm(data)) {
+            return;
+        }
+
+        this.setLoadingState(true);
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...data, role: 'mentee' })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showSuccess('Registration successful! Redirecting to login...');
+                setTimeout(() => this.showLoginForm(), 2000);
+            } else {
+                throw new Error(result.message || 'Registration failed');
+            }
+
+        } catch (error) {
+            console.error('Registration error:', error);
+            this.showError(error.message || 'Registration failed. Please try again.');
+            this.setLoadingState(false);
+        }
+    }
+
+    // Validation methods
+    validateEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    validatePassword(password) {
+        return password && password.length >= 6;
+    }
+
+    validateRegistrationForm(data) {
+        const requiredFields = ['name', 'email', 'password', 'confirmPassword'];
+        
+        for (const field of requiredFields) {
+            if (!data[field] || data[field].trim() === '') {
+                this.showError(`${this.formatFieldName(field)} is required`);
+                return false;
+            }
+        }
+
+        if (!this.validateEmail(data.email)) {
+            this.showError('Please enter a valid email address');
+            return false;
+        }
+
+        if (!this.validatePassword(data.password)) {
+            this.showError('Password must be at least 6 characters');
+            return false;
+        }
+
+        if (data.password !== data.confirmPassword) {
+            this.showError('Passwords do not match');
+            return false;
+        }
+
+        return true;
+    }
+
+    setupFieldValidation() {
+        // Add real-time field validation if needed
+        const inputs = document.querySelectorAll('input[required]');
+        inputs.forEach(input => {
+            input.addEventListener('blur', (e) => {
+                if (!e.target.value.trim()) {
+                    this.showFieldError(e.target, 'This field is required');
+                } else {
+                    this.clearFieldError(e.target);
+                }
+            });
+        });
+    }
+
+    setupPasswordStrength() {
+        const passwordInputs = document.querySelectorAll('input[type="password"][name="password"]');
+        passwordInputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                // Add password strength indicator logic here
+                const strength = this.calculatePasswordStrength(e.target.value);
+                this.updatePasswordStrengthIndicator(input, strength);
+            });
+        });
+    }
+
+    calculatePasswordStrength(password) {
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[^a-zA-Z\d]/.test(password)) strength++;
+        return strength;
+    }
+
+    updatePasswordStrengthIndicator(input, strength) {
+        // Implement visual password strength indicator
+        const indicator = input.parentElement.querySelector('.password-strength');
+        if (indicator) {
+            const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+            indicator.textContent = labels[strength - 1] || '';
+            indicator.className = `password-strength strength-${strength}`;
+        }
+    }
+
+    setupUPIValidation() {
+        // Add UPI validation if needed for payment fields
+    }
+
+    setupRealTimeValidation() {
+        // Add additional real-time validation logic
+    }
+
     // Clear authentication data
     clearAuthData() {
         localStorage.removeItem('authToken');
@@ -163,17 +323,6 @@ class MenteeLogin {
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
         localStorage.removeItem('tokenTimestamp');
-    }
-
-    // Check if token is expired
-    isTokenExpired() {
-        const timestamp = localStorage.getItem('tokenTimestamp');
-        if (!timestamp) return true;
-        
-        const tokenAge = Date.now() - parseInt(timestamp);
-        const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
-        return tokenAge > maxAge;
     }
 
     // UI Helper functions
@@ -276,7 +425,6 @@ class MenteeLogin {
 
 // ===== GOOGLE LOGIN HANDLER =====
 function handleGoogleLogin(response) {
-    // Handle Google OAuth response
     if (response.credential) {
         fetch('/api/auth/google', {
             method: 'POST',
@@ -304,60 +452,14 @@ function handleGoogleLogin(response) {
     }
 }
 
-// ===== GLOBAL FUNCTIONS FOR HTML ONCLICK HANDLERS =====
-window.togglePassword = function(inputId) {
-    const input = document.getElementById(inputId);
-    if (!input) {
-        console.error('Password input not found:', inputId);
-        return;
-    }
-    
-    const button = input.parentElement.querySelector('.password-toggle');
-    if (!button) {
-        console.error('Password toggle button not found for:', inputId);
-        return;
-    }
-    
-    const icon = button.querySelector('i');
-    if (!icon) {
-        console.error('Password toggle icon not found for:', inputId);
-        return;
-    }
-
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-        button.setAttribute('title', 'Hide password');
-    } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-        button.setAttribute('title', 'Show password');
-    }
-};
-
-window.showRegisterForm = function() {
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    if (loginForm) loginForm.style.display = 'none';
-    if (registerForm) registerForm.style.display = 'block';
-    history.pushState({form: 'register'}, '', '#register');
-};
-
-window.showLoginForm = function() {
-    const registerForm = document.getElementById('registerForm');
-    const loginForm = document.getElementById('loginForm');
-    if (registerForm) registerForm.style.display = 'none';
-    if (loginForm) loginForm.style.display = 'block';
-    history.pushState({form: 'login'}, '', '#login');
-};
-
 // ===== INITIALIZE WHEN DOM IS LOADED =====
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Mentee Authentication System Initialized');
     
     const menteeLogin = new MenteeLogin();
+    
+    // Make instance globally accessible for debugging (optional)
+    window.menteeLoginInstance = menteeLogin;
     
     // Check for remembered email
     const rememberedEmail = localStorage.getItem('rememberEmail');
