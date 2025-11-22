@@ -658,6 +658,100 @@ class MenteeService {
             throw new Error('Failed to cancel request');
         }
     }
+
+    async getAllNotifications(userId, limit = 50) {
+        try {
+            const result = await this.db.query(
+                `SELECT * FROM notifications 
+                 WHERE userId = $1 
+                 ORDER BY created_at DESC 
+                 LIMIT $2`,
+                [userId, limit]
+            );
+            
+            return result.rows;
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            throw new Error('Failed to fetch notifications');
+        }
+    }
+
+    async markNotificationAsRead(notificationId, userId) {
+        try {
+            const result = await this.db.query(
+                `UPDATE notifications 
+                 SET isRead = 1 
+                 WHERE id = $1 AND userId = $2
+                 RETURNING *`,
+                [notificationId, userId]
+            );
+            
+            if (result.rows.length === 0) {
+                throw new Error('Notification not found');
+            }
+            
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            throw error;
+        }
+    }
+
+    async markAllNotificationsAsRead(userId) {
+        try {
+            const result = await this.db.query(
+                `UPDATE notifications 
+                 SET isRead = 1 
+                 WHERE userId = $1 AND isRead = 0
+                 RETURNING id`,
+                [userId]
+            );
+            
+            return {
+                message: 'All notifications marked as read',
+                updatedCount: result.rowCount
+            };
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            throw new Error('Failed to mark all notifications as read');
+        }
+    }
+
+    async deleteNotification(notificationId, userId) {
+        try {
+            const result = await this.db.query(
+                `DELETE FROM notifications 
+                 WHERE id = $1 AND userId = $2
+                 RETURNING *`,
+                [notificationId, userId]
+            );
+            
+            if (result.rows.length === 0) {
+                throw new Error('Notification not found');
+            }
+            
+            return result.rows[0];
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            throw error;
+        }
+    }
+
+    async getUnreadNotificationCount(userId) {
+        try {
+            const result = await this.db.query(
+                `SELECT COUNT(*) as count 
+                 FROM notifications 
+                 WHERE userId = $1 AND isRead = 0`,
+                [userId]
+            );
+            
+            return parseInt(result.rows[0].count);
+        } catch (error) {
+            console.error('Error getting unread notification count:', error);
+            throw new Error('Failed to get unread notification count');
+        }
+    }
 }
 
 module.exports = new MenteeService();

@@ -51,6 +51,252 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// Notification System Variables
+let notificationCount = 0;
+let notifications = [];
+
+// Initialize Socket.IO for real-time notifications
+let socket;
+
+// Initialize notifications on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeNotifications();
+    connectSocket();
+});
+
+// Initialize Socket.IO connection
+// Update the connectSocket function to include authentication
+function connectSocket() {
+    const token = localStorage.getItem('token');
+    
+    socket = io({
+        auth: {
+            token: token
+        }
+    });
+    
+    socket.on('connect', () => {
+        console.log('Connected to notification service');
+    });
+    
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error.message);
+    });
+    
+    // Listen for new notifications
+    socket.on('new-notification', (data) => {
+        addNotification(data);
+    });
+    
+    // Listen for notification updates
+    socket.on('notification-update', (data) => {
+        updateNotification(data);
+    });
+}
+
+
+// Initialize notifications
+async function initializeNotifications() {
+    try {
+        const response = await fetch('/api/notifications', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            notifications = data.notifications || [];
+            updateNotificationBadge();
+            renderNotifications();
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+// Toggle notification dropdown
+function toggleNotificationDropdown() {
+    const dropdown = document.getElementById('notificationDropdown');
+    dropdown.classList.toggle('show');
+    
+    // Close profile menu if open
+    const profileMenu = document.getElementById('profileMenu');
+    if (profileMenu && profileMenu.classList.contains('show')) {
+        profileMenu.classList.remove('show');
+    }
+}
+
+// Close notification dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const notificationWrapper = document.querySelector('.notification-wrapper');
+    const dropdown = document.getElementById('notificationDropdown');
+    
+    if (dropdown && !notificationWrapper.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// Add new notification
+function addNotification(notification) {
+    notifications.unshift(notification);
+    updateNotificationBadge();
+    renderNotifications();
+    
+    // Show browser notification if permitted
+    if (Notification.permission === 'granted') {
+        new Notification(notification.title, {
+            body: notification.message,
+            icon: '/assets/logo.png'
+        });
+    }
+}
+
+// Update notification badge
+function updateNotificationBadge() {
+    const unreadCount = notifications.filter(n => n.isread === 0).length;
+    const badge = document.getElementById('notificationBadge');
+    
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        badge.style.display = 'flex';
+        notificationCount = unreadCount;
+    } else {
+        badge.style.display = 'none';
+        notificationCount = 0;
+    }
+}
+
+// Render notifications
+function renderNotifications() {
+    const notificationList = document.getElementById('notificationList');
+    
+    if (notifications.length === 0) {
+        notificationList.innerHTML = `
+            <div class="no-notifications">
+                <i class="fas fa-bell-slash"></i>
+                <p>No new notifications</p>
+            </div>
+        `;
+        return;
+    }
+    
+    notificationList.innerHTML = notifications.map(notification => `
+        <div class="notification-item ${notification.isread === 0 ? 'unread' : ''}" 
+             onclick="handleNotificationClick('${notification.id}')">
+            <div class="notification-content">
+                <div class="notification-icon ${notification.type || 'info'}">
+                    <i class="fas ${getNotificationIcon(notification.type)}"></i>
+                </div>
+                <div class="notification-text">
+                    <h5>${notification.title}</h5>
+                    <p>${notification.message}</p>
+                    <span class="notification-time">${formatNotificationTime(notification.created_at)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Get notification icon based on type
+function getNotificationIcon(type) {
+    const icons = {
+        'info': 'fa-info-circle',
+        'success': 'fa-check-circle',
+        'warning': 'fa-exclamation-triangle',
+        'error': 'fa-times-circle',
+        'message': 'fa-envelope',
+        'session': 'fa-calendar-check',
+        'payment': 'fa-wallet'
+    };
+    return icons[type] || 'fa-bell';
+}
+
+// Format notification time
+function formatNotificationTime(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diff = Math.floor((now - time) / 1000); // difference in seconds
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    
+    return time.toLocaleDateString();
+}
+
+// Handle notification click
+async function handleNotificationClick(notificationId) {
+    try {
+        // Mark as read
+        const response = await fetch(`/api/notifications/${notificationId}/read`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            // Update local notification state
+            const notification = notifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.isread = 1;
+                updateNotificationBadge();
+                renderNotifications();
+                
+                // Navigate to relevant section if data contains link
+                const data = JSON.parse(notification.data || '{}');
+                if (data.link) {
+                    window.location.href = data.link;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+// Mark all notifications as read
+async function markAllAsRead() {
+    try {
+        const response = await fetch('/api/notifications/mark-all-read', {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            notifications.forEach(n => n.isread = 1);
+            updateNotificationBadge();
+            renderNotifications();
+            showSuccessMessage('All notifications marked as read');
+        }
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+    }
+}
+
+// Update specific notification
+function updateNotification(data) {
+    const index = notifications.findIndex(n => n.id === data.notificationId);
+    if (index !== -1) {
+        notifications[index] = { ...notifications[index], ...data.updates };
+        updateNotificationBadge();
+        renderNotifications();
+    }
+}
+
+// Request notification permission (call this on user interaction)
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
 // ========================================
 // LOAD MENTORS FUNCTION
 // ========================================

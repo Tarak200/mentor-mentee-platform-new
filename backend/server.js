@@ -6,6 +6,8 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 let port = Number(process.env.PORT) || 3000;
+const jwt = require('jsonwebtoken');
+const { createNotification } = require('./utils/notificationHelper');
 
 // Import middleware
 const corsMiddleware = require('./middleware/cors');
@@ -172,6 +174,63 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });
+
+// Socket.IO authentication middleware
+io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    
+    if (!token) {
+        return next(new Error('Authentication error'));
+    }
+    
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.userId = decoded.userId;
+        next();
+    } catch (error) {
+        next(new Error('Authentication error'));
+    }
+});
+
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+    console.log(`User connected: ${socket.userId}`);
+    
+    // Join user-specific room
+    socket.join(socket.userId);
+    
+    socket.on('disconnect', () => {
+        console.log(`User disconnected: ${socket.userId}`);
+    });
+});
+
+// Make io available globally for notification sending
+app.set('io', io);
+
+// Example: Using notifications in your routes
+app.post('/api/sessions/accept', async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        
+        // Your session acceptance logic here...
+        
+        // Send notification to mentee
+        const io = req.app.get('io');
+        await createNotification(
+            menteeId,
+            'success',
+            'Session Request Accepted!',
+            `Your session request for ${sessionData.subject} has been accepted by the mentor.`,
+            { link: '/mentee/dashboard#sessions', sessionId: sessionId },
+            io
+        );
+        
+        res.json({ message: 'Session accepted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error accepting session' });
+    }
+});
+
 
 function startServer(desiredPort, maxAttempts = 10) {
     let attempts = 0;
