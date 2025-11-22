@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Mentor-Mentee Platform</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/components/mentee/register/register.css?v2">
 </head>
 <body>
     <div class="auth-container">
@@ -53,11 +53,17 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="password">Password *</label>
-                            <input type="password" id="password" name="password" required minlength="6">
+                            <div class="password-wrapper">
+                                <input type="password" id="password" name="password" required minlength="6">
+                                <i class="toggle-password" onclick="togglePasswordVisibility('password', this)">👁️</i>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="confirmPassword">Confirm Password *</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" required>
+                            <div class="password-wrapper">
+                                <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                <i class="toggle-password" onclick="togglePasswordVisibility('confirmPassword', this)">👁️</i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -138,7 +144,7 @@
                     </div>
                 </div>
                 
-                <!-- Mentor Specific Fields -->
+                <!-- Mentor Specific Fields
                 <div class="form-section" id="mentorFields" style="display: none;">
                     <h3>Mentor Information</h3>
                     <div class="form-row">
@@ -157,17 +163,17 @@
                         <label for="qualifications">Your qualifications and experience</label>
                         <textarea id="qualifications" name="qualifications" rows="4" placeholder="Describe your qualifications, experience, and what makes you a great mentor"></textarea>
                     </div>
-                </div>
+                </div> -->
                 
                 <!-- Mentee Specific Fields -->
-                <div class="form-section" id="menteeFields" style="display: none;">
+                <div class="form-section" id="menteeFields" style="display: block;">
                     <h3>Mentee Information</h3>
                     <div class="form-group">
                         <label for="interests">Subjects you want to learn *</label>
                         <textarea id="interests" name="interests" rows="3" placeholder="e.g., Programming, Data Science, Marketing, etc. (comma-separated)"></textarea>
                     </div>
                     
-                    <div class="form-row">
+                    <!-- <div class="form-row">
                         <div class="form-group">
                             <label for="budgetMin">Minimum Budget (₹/hour)</label>
                             <input type="number" id="budgetMin" name="budgetMin" min="100" step="50">
@@ -176,9 +182,9 @@
                             <label for="budgetMax">Maximum Budget (₹/hour)</label>
                             <input type="number" id="budgetMax" name="budgetMax" min="100" step="50">
                         </div>
-                    </div>
+                    </div> -->
                     
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label for="preferredMentorGender">Preferred Mentor Gender</label>
                         <select id="preferredMentorGender" name="preferredMentorGender">
                             <option value="">No preference</option>
@@ -186,7 +192,7 @@
                             <option value="female">Female</option>
                             <option value="other">Other</option>
                         </select>
-                    </div>
+                    </div> -->
                 </div>
                 
                 <div class="payment-notice">
@@ -217,112 +223,9 @@
     <div id="errorMessage" class="error-message" style="display: none;"></div>
     <div id="successMessage" class="success-message" style="display: none;"></div>
 
-    <script>
-        // Show/hide fields based on user type
-        const userType = localStorage.getItem('selectedUserType') || 'mentee';
-        document.getElementById('registerTitle').textContent = `Create Your ${userType.charAt(0).toUpperCase() + userType.slice(1)} Account`;
-        
-        if (userType === 'mentor') {
-            document.getElementById('mentorFields').style.display = 'block';
-            document.getElementById('hourlyRate').required = true;
-            document.getElementById('subjects').required = true;
-        } else {
-            document.getElementById('menteeFields').style.display = 'block';
-            document.getElementById('interests').required = true;
-        }
-        
-        // Handle form submission
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            
-            // Validate password confirmation
-            if (formData.get('password') !== formData.get('confirmPassword')) {
-                showMessage('Passwords do not match', 'error');
-                return;
-            }
-            
-            // Collect checkbox values
-            const languages = Array.from(document.querySelectorAll('input[name="languages"]:checked')).map(el => el.value);
-            const availableHours = Array.from(document.querySelectorAll('input[name="availableHours"]:checked')).map(el => el.value);
-            
-            if (languages.length === 0) {
-                showMessage('Please select at least one language', 'error');
-                return;
-            }
-            
-            if (availableHours.length === 0) {
-                showMessage('Please select your availability', 'error');
-                return;
-            }
-            
-            const registrationData = {
-                userType: userType,
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                age: parseInt(formData.get('age')),
-                gender: formData.get('gender'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                mobileNumber: formData.get('mobileNumber'),
-                upiId: formData.get('upiId'),
-                education: formData.get('education'),
-                institution: formData.get('institution'),
-                currentPursuit: formData.get('currentPursuit'),
-                languages: languages,
-                availableHours: availableHours
-            };
-            
-            if (userType === 'mentor') {
-                registrationData.hourlyRate = parseFloat(formData.get('hourlyRate'));
-                registrationData.subjects = formData.get('subjects').split(',').map(s => s.trim());
-                registrationData.qualifications = formData.get('qualifications');
-            } else {
-                registrationData.interests = formData.get('interests').split(',').map(s => s.trim());
-                registrationData.budgetMin = formData.get('budgetMin') ? parseFloat(formData.get('budgetMin')) : null;
-                registrationData.budgetMax = formData.get('budgetMax') ? parseFloat(formData.get('budgetMax')) : null;
-                registrationData.preferredMentorGender = formData.get('preferredMentorGender');
-            }
-            
-            try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(registrationData)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showMessage('Registration successful! Please sign in with your credentials.', 'success');
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
-                } else {
-                    showMessage(result.message || 'Registration failed', 'error');
-                }
-            } catch (error) {
-                showMessage('An error occurred. Please try again.', 'error');
-            }
-        });
-        
-        function signUpWithGoogle() {
-            const userType = localStorage.getItem('selectedUserType') || 'mentee';
-            window.location.href = `/auth/google?userType=${userType}`;
-        }
-        
-        function showMessage(message, type) {
-            const messageEl = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
-            messageEl.textContent = message;
-            messageEl.style.display = 'block';
-            
-            setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, 5000);
-        }
-    </script>
+    <script src="/components/mentee/register/register.js"></script>
+    <!-- <script src="/components/mentee/register/register-security.js"></script> -->
 </body>
 </html>
+
+
