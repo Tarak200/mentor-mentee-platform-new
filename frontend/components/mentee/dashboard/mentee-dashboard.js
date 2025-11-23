@@ -494,6 +494,202 @@ async function handleProfilePictureUpload(e) {
     }
 }
 
+// Global variable to track edit mode
+let isEditMode = false;
+
+// Modified updateProfileUI to support editable mode
+function updateProfileUI(user) {
+    // Update header
+    const userName = document.getElementById('userName');
+    const userNameShort = document.getElementById('userNameShort');
+    if (userName) userName.textContent = user.first_name;
+    if (userNameShort) userNameShort.textContent = user.first_name;
+    
+    // Update profile pictures
+    if (user.profile_picture) {
+        const profilePic = document.getElementById('profilePic');
+        const profilePicLarge = document.getElementById('profilePicLarge');
+        if (profilePic) profilePic.src = user.profile_picture;
+        if (profilePicLarge) profilePicLarge.src = user.profile_picture;
+    }
+    
+    // Display profile details
+    const profileDetails = document.getElementById('profileDetails');
+    if (profileDetails) {
+        profileDetails.innerHTML = `
+            <div class="profile-header">
+                <button id="editProfileBtn" class="edit-btn">✏️ Edit Profile</button>
+                <div id="editActions" class="edit-actions" style="display: none;">
+                    <button id="saveProfileBtn" class="save-btn">💾 Save</button>
+                    <button id="cancelEditBtn" class="cancel-btn">❌ Cancel</button>
+                </div>
+            </div>
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <label>First Name</label>
+                    <span class="view-mode">${user.first_name || 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_first_name" value="${user.first_name || ''}" style="display: none;">
+                </div>
+                <div class="profile-item">
+                    <label>Last Name</label>
+                    <span class="view-mode">${user.last_name || 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_last_name" value="${user.last_name || ''}" style="display: none;">
+                </div>
+                <div class="profile-item non-editable">
+                    <label>Email</label>
+                    <span>${user.email}</span>
+                </div>
+                <div class="profile-item">
+                    <label>Gender</label>
+                    <span class="view-mode">${user.gender || 'Not specified'}</span>
+                    <select class="edit-mode" id="edit_gender" style="display: none;">
+                        <option value="">Not specified</option>
+                        <option value="Male" ${user.gender === 'Male' ? 'selected' : ''}>Male</option>
+                        <option value="Female" ${user.gender === 'Female' ? 'selected' : ''}>Female</option>
+                        <option value="Other" ${user.gender === 'Other' ? 'selected' : ''}>Other</option>
+                    </select>
+                </div>
+                <div class="profile-item">
+                    <label>Education</label>
+                    <span class="view-mode">${user.education || 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_education" value="${user.education || ''}" style="display: none;">
+                </div>
+                
+                <!-- ✅ CHANGED: Institution is now EDITABLE -->
+                <div class="profile-item">
+                    <label>Institution</label>
+                    <span class="view-mode">${user.institution || 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_institution" value="${user.institution || ''}" style="display: none;">
+                </div>
+                <div class="profile-item">
+                    <label>Current Pursuit</label>
+                    <span class="view-mode">${user.current_pursuit || 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_current_pursuit" value="${user.current_pursuit || ''}" style="display: none;">
+                </div>
+                <div class="profile-item">
+                    <label>Subjects</label>
+                    <span class="view-mode">${user.subjects ? user.subjects.join(', ') : 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_subjects" value="${user.subjects ? user.subjects.join(', ') : ''}" placeholder="Comma-separated" style="display: none;">
+                </div>
+                <div class="profile-item">
+                    <label>Learning Goals / Bio</label>
+                    <span class="view-mode">${user.bio || 'Not specified'}</span>
+                    <textarea class="edit-mode" id="edit_bio" rows="3" style="display: none;">${user.bio || ''}</textarea>
+                </div>
+                <div class="profile-item">
+                    <label>Languages</label>
+                    <span class="view-mode">${user.languages ? user.languages.join(', ') : 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_languages" value="${user.languages ? user.languages.join(', ') : ''}" placeholder="Comma-separated" style="display: none;">
+                </div>
+                <div class="profile-item">
+                    <label>Phone</label>
+                    <span class="view-mode">${user.phone || 'Not specified'}</span>
+                    <input type="tel" class="edit-mode" id="edit_phone" value="${user.phone || ''}" style="display: none;">
+                </div>
+                <div class="profile-item">
+                    <label>Available Hours</label>
+                    <span class="view-mode">${user.available_hours ? user.available_hours.join(', ') : 'Not specified'}</span>
+                    <input type="text" class="edit-mode" id="edit_available_hours" value="${user.available_hours ? user.available_hours.join(', ') : ''}" placeholder="Comma-separated" style="display: none;">
+                </div>
+            </div>
+        `;
+        
+        // Attach event listeners
+        attachProfileEventListeners(user);
+    }
+}
+
+function attachProfileEventListeners(currentUser) {
+    const editBtn = document.getElementById('editProfileBtn');
+    const saveBtn = document.getElementById('saveProfileBtn');
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    
+    if (editBtn) {
+        editBtn.addEventListener('click', () => toggleEditMode(true));
+    }
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => saveProfile(currentUser));
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => toggleEditMode(false));
+    }
+}
+
+function toggleEditMode(enable) {
+    isEditMode = enable;
+    
+    const viewElements = document.querySelectorAll('.view-mode');
+    const editElements = document.querySelectorAll('.edit-mode');
+    const editBtn = document.getElementById('editProfileBtn');
+    const editActions = document.getElementById('editActions');
+    
+    if (enable) {
+        // Show edit mode
+        viewElements.forEach(el => el.style.display = 'none');
+        editElements.forEach(el => el.style.display = 'block');
+        if (editBtn) editBtn.style.display = 'none';
+        if (editActions) editActions.style.display = 'flex';
+    } else {
+        // Show view mode
+        viewElements.forEach(el => el.style.display = 'block');
+        editElements.forEach(el => el.style.display = 'none');
+        if (editBtn) editBtn.style.display = 'inline-block';
+        if (editActions) editActions.style.display = 'none';
+    }
+}
+
+async function saveProfile(currentUser) {
+    try {
+        // Gather updated data from form inputs
+        const updatedData = {
+            firstName: document.getElementById('edit_first_name')?.value || currentUser.first_name,
+            lastName: document.getElementById('edit_last_name')?.value || currentUser.last_name,
+            email: currentUser.email, // Keep original email (non-editable)
+            gender: document.getElementById('edit_gender')?.value || null,
+            education: document.getElementById('edit_education')?.value || null,  // ✅ ADDED
+            institution: document.getElementById('edit_institution')?.value || null,  // ✅ ADDED
+            current_pursuit: document.getElementById('edit_current_pursuit')?.value || null,
+            bio: document.getElementById('edit_bio')?.value || null,
+            phone: document.getElementById('edit_phone')?.value || null,
+            subjects: document.getElementById('edit_subjects')?.value
+                ? document.getElementById('edit_subjects').value.split(',').map(s => s.trim()).filter(s => s)
+                : [],
+            languages: document.getElementById('edit_languages')?.value
+                ? document.getElementById('edit_languages').value.split(',').map(s => s.trim()).filter(s => s)
+                : [],
+            available_hours: document.getElementById('edit_available_hours')?.value
+                ? document.getElementById('edit_available_hours').value.split(',').map(s => s.trim()).filter(s => s)
+                : []
+        };
+        
+        // Send PUT request to update profile
+        const response = await fetch('/api/user/update-profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(updatedData)
+        });
+        
+        if (response.ok) {
+            showMessage('✅ Profile updated successfully!', 'success');
+            toggleEditMode(false);
+            
+            // 🔥 FIX: Reload fresh data from database instead of using response
+            await loadProfile();
+        } else {
+            const error = await response.json();
+            showMessage(error.error || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        showMessage('❌ An error occurred while saving', 'error');
+    }
+}
+
 // ========================================
 // PLATFORM CONFIGURATION
 // ========================================

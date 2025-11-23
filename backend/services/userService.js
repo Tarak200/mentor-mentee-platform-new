@@ -60,13 +60,13 @@ class UserService {
     }
 
     // Update user profile
-    async updateUserProfile(userId, updated_ata) {
+    async updateUserProfile(userId, updated_data) {
         try {
             // Check if email is being changed and if it's already in use
-            if (updated_ata.email) {
+            if (updated_data.email) {
                 const existingUser = await db.get(
                     'SELECT id FROM users WHERE email = ? AND id != ?',
-                    [updated_ata.email, userId]
+                    [updated_data.email, userId]
                 );
                 
                 if (existingUser) {
@@ -78,26 +78,48 @@ class UserService {
             const updateFields = [];
             const updateValues = [];
             
-            // Handle regular fields
-            const regularFields = [
-                'firstName', 'lastName', 'email', 'phone', 'bio', 
-                'location', 'experience', 'education', 'certifications', 
-                'hourlyRate', 'startTime', 'endTime', 'timezone'
-            ];
+            // Map frontend fields to database columns
+            const fieldMapping = {
+                'firstName': 'firstName',
+                'lastName': 'lastName',
+                'email': 'email',
+                'phone': 'phone',
+                'bio': 'bio',
+                'gender': 'gender',
+                'current_pursuit': 'current_pursuit',
+                'qualifications': 'qualifications',
+                'hourlyRate': 'hourlyRate',
+                'upi_id': 'upi_id',
+                'education': 'education',        // ✅ ADDED
+                'institution': 'institution', 
+            };
 
-            regularFields.forEach(field => {
-                if (updated_ata.hasOwnProperty(field)) {
-                    updateFields.push(`${field} = ?`);
-                    updateValues.push(updated_ata[field]);
+            // Handle regular fields
+            Object.keys(fieldMapping).forEach(frontendField => {
+                if (updated_data.hasOwnProperty(frontendField)) {
+                    const dbField = fieldMapping[frontendField];
+                    updateFields.push(`${dbField} = ?`);
+                    updateValues.push(updated_data[frontendField]);
                 }
             });
 
-            // Handle JSON fields
-            const jsonFields = ['expertise', 'availability', 'interests', 'paymentMethods'];
-            jsonFields.forEach(field => {
-                if (updated_ata.hasOwnProperty(field)) {
+            // Handle array/comma-separated fields - FIXED VERSION
+            const arrayFields = ['subjects', 'languages', 'available_hours'];
+            arrayFields.forEach(field => {
+                if (updated_data.hasOwnProperty(field)) {
                     updateFields.push(`${field} = ?`);
-                    updateValues.push(JSON.stringify(updated_ata[field]));
+                    let value;
+                    if (Array.isArray(updated_data[field])) {
+                        // Filter out empty strings and join
+                        value = updated_data[field]
+                            .filter(item => item && item.trim())
+                            .join(',');
+                    } else if (typeof updated_data[field] === 'string') {
+                        value = updated_data[field];
+                    } else {
+                        value = null;
+                    }
+                    updateValues.push(value);
                 }
             });
 

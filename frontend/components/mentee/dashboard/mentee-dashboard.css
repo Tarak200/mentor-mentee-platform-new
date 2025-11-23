@@ -2803,6 +2803,63 @@ body.mentee-body {
     z-index: 1;
 }
 
+/* =============================
+        EDIT MODE
+================================== */
+
+.profile-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.edit-btn, .save-btn, .cancel-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.edit-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.save-btn {
+    background-color: #2196F3;
+    color: white;
+}
+
+.cancel-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.profile-item.non-editable {
+    opacity: 0.7;
+}
+
+.edit-mode {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.edit-mode:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+
 /* ===========================
    AVATAR STYLING
    =========================== */
