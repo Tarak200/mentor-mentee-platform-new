@@ -1430,8 +1430,9 @@ async function handleConnectFormSubmit(formElement) {
         // Check if response was successful
         if (response.ok && result.success) {
             console.log('✅ Connection request sent successfully!');
-            showSuccessPopup('Connection request sent successfully! 🎉');
             closeConnectModal();
+            showSuccessPopup('Connection request sent successfully! 🎉');
+            
             return true; // Return true on success
             
         } else {
@@ -1930,34 +1931,41 @@ function showSuccessPopup(message = 'Your connection request has been sent to th
     const successPopup = document.getElementById('successPopup');
     const successMessage = document.getElementById('successPopupMessage');
     
+    if (!successPopup || !successMessage) {
+        console.error('❌ Success popup elements not found!');
+        return;
+    }
+    
     // Set custom message if provided
     if (message) {
         successMessage.textContent = message;
     }
     
-    // Show modal with smooth animation
+    // Show modal
     successPopup.style.display = 'block';
-    // document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
     
-    // Add animation class for fade-in effect
+    // Trigger animation after display is set
     setTimeout(() => {
-        successPopup.style.opacity = '1';
+        successPopup.classList.add('show');  // ← Use class instead of inline opacity
     }, 10);
 }
+
 
 // Function to close success popup
 function closeSuccessPopup() {
     const successPopup = document.getElementById('successPopup');
     
-    // Fade out animation
-    successPopup.style.opacity = '0';
+    // Remove show class for fade out
+    successPopup.classList.remove('show');
     
     // Hide modal after animation completes
     setTimeout(() => {
         successPopup.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restore scrolling
+        document.body.style.overflow = 'auto';
     }, 300);
 }
+
 
 function logout() {
     localStorage.removeItem('authToken');
