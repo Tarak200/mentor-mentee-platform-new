@@ -1070,10 +1070,16 @@ body.mentee-body {
     border-radius: 16px;
     padding: 2px;
     background: linear-gradient(135deg, #9b87f5, #7c5dfa, #b794f6, #9b87f5);
+    
+    /* Standard properties (add these) */
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    
+    /* WebKit-prefixed properties (for Safari/older browsers) */
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
-    mask-composite: exclude;
 }
+
 
 /* ===========================
    SOFT GLOW EFFECT
