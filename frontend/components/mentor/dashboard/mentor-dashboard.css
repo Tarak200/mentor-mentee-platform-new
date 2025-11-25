@@ -1957,3 +1957,190 @@ body.mentor-body {
     background: #6b7280;
     color: white;
 }
+
+
+/* decline modal stylings */
+
+/* ===== DECLINE MODAL STYLES ===== */
+.decline-modal-wrapper {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 99999 !important;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Modal overlay */
+.decline-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1;
+}
+
+/* Modal content container */
+.decline-modal-content {
+    position: relative;
+    z-index: 2;
+    max-width: 500px;
+    width: 90%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideDown 0.3s ease-out;
+}
+
+/* Modal header */
+.decline-modal-header {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.decline-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.decline-modal-header i {
+    font-size: 22px;
+}
+
+/* Close button */
+.decline-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.decline-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+/* Modal body */
+.decline-modal-body {
+    padding: 30px 24px;
+    text-align: center;
+}
+
+.decline-modal-body p {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: #333;
+    line-height: 1.5;
+}
+
+.decline-text-muted {
+    font-size: 14px !important;
+    color: #666 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Modal actions */
+.decline-modal-actions {
+    padding: 0 24px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* Buttons */
+.decline-btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.decline-btn-danger {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    color: white;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.decline-btn-danger:hover {
+    background: linear-gradient(135deg, #ff5252, #e63946);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+}
+
+.decline-btn-cancel {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.decline-btn-cancel:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .decline-modal-content {
+        max-width: 90%;
+        margin: 20px;
+    }
+    
+    .decline-modal-actions {
+        flex-direction: column;
+    }
+    
+    .decline-btn {
+        width: 100%;
+    }
+}

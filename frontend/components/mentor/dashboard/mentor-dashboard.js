@@ -46,16 +46,14 @@ if (!token) {
     
 // Load dashboard data
 document.addEventListener('DOMContentLoaded', async () => {
-
     // Event delegation for dynamically created buttons
     document.addEventListener('click', async function(e) {
         
         // Handle Accept Button Click
         if (e.target.closest('.btn-accept-modal')) {
-            // console.log("Accept button clicked");
             const button = e.target.closest('.btn-accept-modal');
             const requestId = button.getAttribute('data-request-id');
-
+            
             // Fetch complete request details from API
             fetch(`/api/mentor/mentoring-requests/${requestId}`)
                 .then(response => {
@@ -80,30 +78,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.error('Error fetching request details:', error);
                     alert('Failed to load request details. Please try again.');
                 });
-
-
-            // const firstName = button.getAttribute('data-first-name');
-            // const lastName = button.getAttribute('data-last-name');
-            // const goals = button.getAttribute('data-goals');
-            // const avatar = button.getAttribute('data-avatar');
-            
-            // Show the modal with request details
-            showIncomingRequestModal({
-                requestId: requestId,
-                mentee: {
-                    firstName: firstName,
-                    lastName: lastName,
-                    avatar: avatar
-                },
-                message: goals
-            });
         }
         
-        // Handle Reject Button Click
+        // Handle Decline Button Click - FIXED
         if (e.target.closest('.btn-reject')) {
             const button = e.target.closest('.btn-reject');
             const requestId = button.getAttribute('data-request-id');
-            await rejectRequest(requestId);
+            // Show the decline confirmation modal
+            showDeclineModal(requestId);
         }
     });
 
@@ -442,7 +424,7 @@ async function loadRequests() {
                 </div>
 
                 <div class="request-actions">
-                    <button class="btn btn-accept-modal" data-request-id="${request.id}" data-name="${request.firstName} ${request.lastName}" data-goals="${request.goals || request.message}">
+                    <button class="btn btn-accept" data-request-id="${request.id}" data-name="${request.firstName} ${request.lastName}" data-goals="${request.goals || request.message}">
                         <i class="fas fa-check-circle"></i> Accept Request
                     </button>
                     <button class="btn btn-reject" data-request-id="${request.id}">
@@ -843,10 +825,65 @@ document.getElementById('acceptForm').addEventListener('submit', async (e) => {
     }
 });
 
+function showDeclineModal(requestId) {
+    console.log('showDeclineModal called with requestId:', requestId);
+    
+    // Create modal HTML with UNIQUE class names
+    const modal = document.createElement('div');
+    modal.className = 'decline-modal-wrapper';
+    modal.innerHTML = `
+        <div class="decline-modal-overlay"></div>
+        <div class="decline-modal-content">
+            <div class="decline-modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Decline Request</h3>
+                <button class="decline-close-btn close-decline-modal"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="decline-modal-body">
+                <p>Are you sure you want to decline this mentorship request?</p>
+                <p class="decline-text-muted">The mentee will be notified of your decision.</p>
+            </div>
+            
+            <div class="decline-modal-actions">
+                <button class="decline-btn decline-btn-danger btn-confirm-decline" data-request-id="${requestId}">
+                    <i class="fas fa-times-circle"></i> Yes, Decline
+                </button>
+                <button class="decline-btn decline-btn-cancel close-decline-modal">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    console.log('Modal element created:', modal);
+    document.body.appendChild(modal);
+    console.log('Modal appended to body');
+    console.log('Modal display style:', window.getComputedStyle(modal).display);
+    console.log('Modal visibility:', window.getComputedStyle(modal).visibility);
+    console.log('Modal z-index:', window.getComputedStyle(modal).zIndex);
+    
+    // Close modal handlers
+    modal.querySelectorAll('.close-decline-modal, .decline-modal-overlay').forEach(el => {
+        el.addEventListener('click', () => {
+            console.log('Close button clicked');
+            modal.remove();
+        });
+    });
+    
+    // Confirm decline handler
+    modal.querySelector('.btn-confirm-decline').addEventListener('click', async () => {
+        console.log('Confirm decline clicked');
+        modal.remove();
+        await rejectRequest(requestId);
+    });
+}
+
+
 async function rejectRequest(requestId) {
-    if (!confirm('Are you sure you want to reject this request?')) return;
+    console.log('rejectRequest called with requestId:', requestId);
     
     try {
+        console.log('Making API call to decline request...');
         const response = await fetch(`/api/mentor/requests/${requestId}/decline`, {
             method: 'POST',
             headers: {
@@ -858,7 +895,9 @@ async function rejectRequest(requestId) {
             })
         });
         
+        console.log('API Response status:', response.status);
         const result = await response.json();
+        console.log('API Response data:', result);
         
         if (response.ok) {
             showMessage('Request rejected', 'success');
@@ -867,6 +906,7 @@ async function rejectRequest(requestId) {
             showMessage(result.message || 'Error rejecting request', 'error');
         }
     } catch (error) {
+        console.error('Error in rejectRequest:', error);
         showMessage('An error occurred', 'error');
     }
 }
@@ -1051,8 +1091,8 @@ function showIncomingRequestModal(payload) {
                 <input type="url" class="meeting-link-input" placeholder="https://meet.google.com/...">
             </div>
             <div class="modal-actions">
-                <button class="btn btn-accept"><i class="fas fa-check"></i> Accept</button>
-                <button class="btn btn-reject"><i class="fas fa-times"></i> Deny</button>
+                <button class="btn btn-accept-modal"><i class="fas fa-check"></i> Accept</button>
+                <button class="btn btn-reject-modal"><i class="fas fa-times"></i> Deny</button>
             </div>
         </div>`;
 
@@ -1061,7 +1101,7 @@ function showIncomingRequestModal(payload) {
     modal.querySelector('.modal-overlay').addEventListener('click', close);
     modal.querySelector('.close-btn').addEventListener('click', close);
     // FIND THIS SECTION IN showIncomingRequestModal():
-    modal.querySelector('.btn-accept').addEventListener('click', async () => {
+    modal.querySelector('.btn-accept-modal').addEventListener('click', async () => {
         try {
             console.log("Accepting request with payload:", payload);
             const meetingTimeInput = modal.querySelector('.meeting-time-input');
@@ -1395,6 +1435,13 @@ function setupModalForms() {
     }
     
     // Add more modal form handlers as needed
+}
+
+
+if (e.target.closest('.btn-reject')) {
+    e.preventDefault();
+    const requestId = e.target.closest('.btn-reject').dataset.requestId;
+    showDeclineModal(requestId);  // Call modal instead of direct reject
 }
 
 // ===== CHART FUNCTIONALITY =====

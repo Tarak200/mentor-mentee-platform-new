@@ -456,7 +456,7 @@ router.get('/mentoring-requests/:requestId', authMiddleware.authenticateToken, r
 // Decline mentoring request
 router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
     try {
-        console.log("request :", req);
+        // console.log("request :", req);
         const mentorId = req.user.id || req.user.userId;
         // console.log("mentorId:", mentorId);
         const { requestId } = req.params;
