@@ -43,41 +43,56 @@ if (!token) {
 }
 
     
-    
 // Load dashboard data
 document.addEventListener('DOMContentLoaded', async () => {
     // Event delegation for dynamically created buttons
     document.addEventListener('click', async function(e) {
         
         // Handle Accept Button Click
-        if (e.target.closest('.btn-accept-modal')) {
-            const button = e.target.closest('.btn-accept-modal');
+        if (e.target.closest('.btn-accept')) {
+            console.log('✅ Accept button clicked - opening modal');
+            const button = e.target.closest('.btn-accept');
             const requestId = button.getAttribute('data-request-id');
+            const menteeName = button.getAttribute('data-name');
+            const goals = button.getAttribute('data-goals');
+            
+            if (!requestId) {
+                console.error('❌ No request ID found on button');
+                showMessage('Error: Request ID not found', 'error');
+                return;
+            }
             
             // Fetch complete request details from API
-            fetch(`/api/mentor/mentoring-requests/${requestId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch request details');
+            try {
+                const response = await fetch(`/api/mentor/mentoring-requests/${requestId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    // Show the modal with complete request details
-                    showIncomingRequestModal({
-                        requestId: data.requestId,
-                        mentee: {
-                            firstName: data.firstName,
-                            lastName: data.lastName,
-                            avatar: data.avatar
-                        },
-                        message: data.message
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching request details:', error);
-                    alert('Failed to load request details. Please try again.');
                 });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch request details');
+                }
+                
+                const data = await response.json();
+                
+                // Show the modal with complete request details
+                showIncomingRequestModal({
+                    requestId: data.requestId || requestId,
+                    mentee: {
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        avatar: data.avatar
+                    },
+                    message: data.message,
+                    subject: goals,
+                    preferredTime : data.preferredSchedule
+                });
+            } catch (error) {
+                console.error('Error fetching request details:', error);
+                showMessage('Failed to load request details. Please try again.', 'error');
+            }
         }
         
         // Handle Decline Button Click - FIXED
@@ -259,6 +274,7 @@ async function loadRequests() {
         console.error("❌ Element with ID 'requestsList' not found.");
         return;
     }
+
 
     // Show loading spinner
     requestsList.innerHTML = `
@@ -791,39 +807,6 @@ function closeModal() {
     currentRequestId = null;
 }
 
-document.getElementById('acceptForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const meetingTime = document.getElementById('meetingTime').value;
-    const meetingLink = document.getElementById('meetingLink').value;
-    
-    try {
-        const response = await fetch(`/api/mentor/requests/${currentRequestId}/accept`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                meetingTime: meetingTime,
-                meetingLink: meetingLink
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-            showMessage('Request accepted and session scheduled!', 'success');
-            closeModal();
-            await loadRequests();
-            await loadSessions();
-        } else {
-            showMessage(result.message || 'Error accepting request', 'error');
-        }
-    } catch (error) {
-        showMessage('An error occurred', 'error');
-    }
-});
 
 function showDeclineModal(requestId) {
     console.log('showDeclineModal called with requestId:', requestId);
@@ -832,56 +815,67 @@ function showDeclineModal(requestId) {
     const modal = document.createElement('div');
     modal.className = 'decline-modal-wrapper';
     modal.innerHTML = `
-        <div class="decline-modal-overlay"></div>
-        <div class="decline-modal-content">
-            <div class="decline-modal-header">
-                <h3><i class="fas fa-exclamation-triangle"></i> Decline Request</h3>
-                <button class="decline-close-btn close-decline-modal"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <div class="decline-modal-body">
-                <p>Are you sure you want to decline this mentorship request?</p>
-                <p class="decline-text-muted">The mentee will be notified of your decision.</p>
-            </div>
-            
-            <div class="decline-modal-actions">
-                <button class="decline-btn decline-btn-danger btn-confirm-decline" data-request-id="${requestId}">
-                    <i class="fas fa-times-circle"></i> Yes, Decline
-                </button>
-                <button class="decline-btn decline-btn-cancel close-decline-modal">
-                    Cancel
-                </button>
-            </div>
+    <div class="decline-modal-overlay"></div>
+    <div class="decline-modal-content">
+        <div class="decline-modal-header">
+        <h3><i class="fas fa-exclamation-triangle"></i> Decline Request</h3>
+        <button class="decline-close-btn close-decline-modal"><i class="fas fa-times"></i></button>
         </div>
+        
+        <div class="decline-modal-body">
+        <p>Are you sure you want to decline this mentorship request?</p>
+        <p class="decline-text-muted">The mentee will be notified of your decision.</p>
+
+        <label for="decline-reason" class="decline-reason-label">
+            Reason for declining (required)
+        </label>
+        <textarea
+            id="decline-reason"
+            class="decline-reason-input"
+            rows="4"
+            placeholder="Please tell the mentee why you are declining this request..."></textarea>
+        </div>
+
+        <div class="decline-modal-actions">
+        <button
+            class="decline-btn decline-btn-danger btn-confirm-decline"
+            data-request-id="${requestId}">
+            <i class="fas fa-times-circle"></i> Yes, Decline
+        </button>
+        <button class="decline-btn decline-btn-cancel close-decline-modal">
+            Cancel
+        </button>
+        </div>
+    </div>
     `;
+
     
-    console.log('Modal element created:', modal);
     document.body.appendChild(modal);
-    console.log('Modal appended to body');
-    console.log('Modal display style:', window.getComputedStyle(modal).display);
-    console.log('Modal visibility:', window.getComputedStyle(modal).visibility);
-    console.log('Modal z-index:', window.getComputedStyle(modal).zIndex);
     
     // Close modal handlers
     modal.querySelectorAll('.close-decline-modal, .decline-modal-overlay').forEach(el => {
         el.addEventListener('click', () => {
-            console.log('Close button clicked');
             modal.remove();
         });
     });
     
     // Confirm decline handler
     modal.querySelector('.btn-confirm-decline').addEventListener('click', async () => {
-        console.log('Confirm decline clicked');
+
+        const reason = modal.querySelector('.decline-reason-input').value.trim();
+            if (!reason) {
+                alert('Please enter a reason before declining.');
+                return;
+            }
+
         modal.remove();
-        await rejectRequest(requestId);
+
+        await rejectRequest(requestId, reason);
     });
 }
 
 
-async function rejectRequest(requestId) {
-    console.log('rejectRequest called with requestId:', requestId);
-    
+async function rejectRequest(requestId, reason) {    
     try {
         console.log('Making API call to decline request...');
         const response = await fetch(`/api/mentor/requests/${requestId}/decline`, {
@@ -895,7 +889,6 @@ async function rejectRequest(requestId) {
             })
         });
         
-        console.log('API Response status:', response.status);
         const result = await response.json();
         console.log('API Response data:', result);
         
@@ -1059,48 +1052,65 @@ function setupRealtime() {
     }
 }
 
+function toDatetimeLocalString(dateString) {
+  const d = new Date(dateString);
+  const pad = n => n.toString().padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${hours}:${minutes} hours on ${day}-${month}-${year}`;
+}
 
 function showIncomingRequestModal(payload) {
     console.log("Showing incoming request modal with payload:", payload);
     const modal = document.createElement('div');
-    modal.className = 'modal';
+    modal.className = 'accept-modal';
+    modal.style.display = 'flex';
+    const preferredTimeValue = payload.preferredTime ? toDatetimeLocalString(payload.preferredTime) : '';
+
     modal.innerHTML = `
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="accept-modal-overlay"></div>
+        <div class="accept-modal-content">
+            <div class="accept-modal-header">
                 <h3><i class="fas fa-user-plus"></i> New Connection Request</h3>
                 <button class="close-btn">&times;</button>
             </div>
-            <div class="mentee-preview">
-                <div class="mentee-preview-card">
+            <div class="accept-mentee-preview">
+                <div class="accept-mentee-preview-card">
                     <img src="${payload.mentee?.avatar || '../uploads/default.jpg'}" alt="${payload.mentee?.firstName || ''}">
                     <div>
                         <h4>${(payload.mentee?.firstName || '') + ' ' + (payload.mentee?.lastName || '')}</h4>
-                        ${payload.subject ? `<p><strong>Subject:</strong> ${payload.subject}</p>` : ''}
                         ${payload.message ? `<p><strong>Message:</strong> ${payload.message}</p>` : ''}
-                        ${payload.preferredTime ? `<p><strong>Preferred Time:</strong> ${payload.preferredTime}</p>` : ''}
+                        ${preferredTimeValue ? `<p><strong>Preferred Time:</strong> ${preferredTimeValue}</p>` : ''}
                     </div>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="accept-form-group">
                 <label><i class="fas fa-clock"></i> Meeting Date & Time</label>
-                <input type="datetime-local" class="meeting-time-input" required>
+                <input type="datetime-local" class="meeting-time-input" required value = "${payload.preferredTime || ''}">
             </div>
-            <div class="form-group">
+            <div class="accept-form-group">
                 <label><i class="fas fa-video"></i> Meeting Link (optional)</label>
                 <input type="url" class="meeting-link-input" placeholder="https://meet.google.com/...">
             </div>
-            <div class="modal-actions">
+            <div class="accept-form-group">
+                <label><i class="fas fa-message"></i> Message to Mentee (optional)</label>
+                <input type="text" class="meeting-message-input" placeholder="Enter your message...">
+            </div>
+            <div class="accept-modal-actions">
                 <button class="btn btn-accept-modal"><i class="fas fa-check"></i> Accept</button>
-                <button class="btn btn-reject-modal"><i class="fas fa-times"></i> Deny</button>
+                <button class="btn btn-reject-modal"><i class="fas fa-times"></i> Cancel</button>
             </div>
         </div>`;
 
     function close() { document.body.removeChild(modal); }
 
-    modal.querySelector('.modal-overlay').addEventListener('click', close);
+    modal.querySelector('.accept-modal-overlay').addEventListener('click', close);
     modal.querySelector('.close-btn').addEventListener('click', close);
     // FIND THIS SECTION IN showIncomingRequestModal():
+
     modal.querySelector('.btn-accept-modal').addEventListener('click', async () => {
         try {
             console.log("Accepting request with payload:", payload);
@@ -1144,24 +1154,9 @@ function showIncomingRequestModal(payload) {
         }
     });
 
-    modal.querySelector('.btn-reject').addEventListener('click', async () => {
-        try {
-            const resp = await fetch(`/api/mentor/requests/${payload.requestId}/decline`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: 'Not available' })
-            });
-            if (resp.ok) {
-                showMessage('Declined connection request', 'success');
-                close();
-                await loadRequests();
-            } else {
-                const r = await resp.json().catch(() => ({}));
-                showMessage(r.error || 'Failed to decline', 'error');
-            }
-        } catch (e) {
-            showMessage('Network error', 'error');
-        }
+
+    modal.querySelector('.btn-reject-modal').addEventListener('click', async () => {
+        close();
     });
 
     document.body.appendChild(modal);
@@ -1435,13 +1430,6 @@ function setupModalForms() {
     }
     
     // Add more modal form handlers as needed
-}
-
-
-if (e.target.closest('.btn-reject')) {
-    e.preventDefault();
-    const requestId = e.target.closest('.btn-reject').dataset.requestId;
-    showDeclineModal(requestId);  // Call modal instead of direct reject
 }
 
 // ===== CHART FUNCTIONALITY =====

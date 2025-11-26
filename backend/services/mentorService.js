@@ -409,6 +409,7 @@ class MentorService {
 
     // Accept mentoring request
     async acceptRequest(mentorId, requestId) {
+        console.log("acceptance request api is called");
         try {
             const request = await db.get(
                 'SELECT * FROM mentoring_requests WHERE id = ? AND mentorId = ?',

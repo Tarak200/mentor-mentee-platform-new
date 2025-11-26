@@ -438,7 +438,7 @@ router.get('/mentoring-requests/:requestId', authMiddleware.authenticateToken, r
             WHERE mr.id = ?
         `;
         
-        db.get(query, [requestId], (err, row) => {
+        db.db.get(query, [requestId], (err, row) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
@@ -452,6 +452,7 @@ router.get('/mentoring-requests/:requestId', authMiddleware.authenticateToken, r
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 // Decline mentoring request
 router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
