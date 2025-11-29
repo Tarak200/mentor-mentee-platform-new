@@ -360,7 +360,6 @@ router.post('/requests/:requestId/accept', authMiddleware.authenticateToken, req
         const { meetingTime, meetingLink } = req.body || {};
 
         // Lookup menteeId for realtime notification
-        const db = require('../services/database');
         const reqRow = await db.get('SELECT menteeId, mentorId FROM mentoring_requests WHERE id = ?', [requestId]);
 
         const result = await mentorService.acceptRequest(mentorId, requestId);
@@ -438,21 +437,18 @@ router.get('/mentoring-requests/:requestId', authMiddleware.authenticateToken, r
             WHERE mr.id = ?
         `;
         
-        db.db.get(query, [requestId], (err, row) => {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-            if (!row) {
-                return res.status(404).json({ error: 'Request not found' });
-            }
-            res.json(row);
-        });
+        const row = await db.get(query, [requestId]);
+        
+        if (!row) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        
+        res.json(row);
     } catch (error) {
         console.error('Error fetching request:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
 
 // Decline mentoring request
 router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
@@ -492,6 +488,106 @@ router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, re
         res.json({ message: 'Request declined successfully' });
     } catch (error) {
         console.error('Error declining request:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Decline connection request
+// POST /api/mentor/connection-requests/:id/status
+router.post('/connection-requests/:id/status', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
+    console.log('request body:', req.body);
+    console.log(`status API is called to ${req.body.body.status}`); // FIX: Changed to get status from req.body.body.status
+    try {
+        const requestId = req.params.id;
+        const reason = req.body.body.reason || req.body.body.meetingMessage; 
+        const status = req.body.body.status;
+        
+        console.log('start', { requestId});
+        
+        if (!reason || !reason.trim()) {
+            console.warn('missing reason');
+            return res.status(400).json({ error: 'reason is required' });
+        }
+        
+        // Fetch mentor and mentee IDs from mentoring_requests
+        const getPairSql = `SELECT mentorId, menteeId, preferredSchedule, message FROM mentoring_requests WHERE id = ? LIMIT 1`;
+        const row = await db.get(getPairSql, [requestId]);
+        
+        if (!row) {
+            console.warn('mentoring request not found', { requestId });
+            return res.status(404).json({ error: 'Mentoring request not found' });
+        }
+        
+        const { mentorId, menteeId, preferredSchedule, message } = row; // FIX: Removed status, mentorTime, meetingLink, mentorMessage from destructuring
+        const mentorTime = req.body.body.mentorTime; // FIX: Get from request body
+        const meetingLink = req.body.body.meeting_link; // FIX: Get from request body
+        const mentorMessage = req.body.body.mentorMessage; // FIX: Get from request body
+        
+        console.log('fetched pair', { mentorId, menteeId });
+        
+        // Try to update existing connection_request
+        const updateSql = `
+            UPDATE connection_requests
+            SET mentor_id = ?, 
+                mentee_id = ?, 
+                mentee_message = ?, 
+                mentee_preferred_time = ?, 
+                meeting_datetime = ?,
+                meeting_link = ?,
+                mentor_message = ?,
+                status = ?,
+                reason = ?, 
+                responded_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `;
+        
+        console.log('update query is ready');
+        const updateResult = await db.run(updateSql, [
+            mentorId, 
+            menteeId, 
+            message || null, 
+            preferredSchedule || null, 
+            mentorTime || null,
+            meetingLink || null,
+            mentorMessage || null,
+            status,
+            reason.trim(), 
+            requestId,
+        ]);
+        
+        console.log('update changes', updateResult.changes);
+        
+        // If no rows were updated, insert a new record
+        if (updateResult.changes === 0) {
+            const insertSql = `
+                INSERT INTO connection_requests
+                    (id, mentor_id, mentee_id, mentee_message, mentee_preferred_time, meeting_datetime, meeting_link,
+                    mentor_message, status, reason, responded_at, updated_at, created_at)
+                VALUES
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`; // FIX: Fixed SQL syntax
+            
+            await db.run(insertSql, [
+                requestId, 
+                mentorId, 
+                menteeId, 
+                message || null, 
+                preferredSchedule || null,
+                mentorTime || null,
+                meetingLink || null,
+                mentorMessage || null, 
+                status,
+                reason.trim()
+            ]);
+            console.log('inserted row id', requestId);
+            return res.json({ success: true, created: true });
+        } else {
+            console.log('updated row id', requestId);
+            return res.json({ success: true, updated: true });
+        }
+        
+    } catch (error) {
+        console.error('error', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

@@ -778,33 +778,35 @@ async function loadEarnings() {
     }
 }
 
-function acceptRequest(requestId, menteeName, subject) {
-    currentRequestId = requestId;
-    
-    // Show mentee preview in modal
-    document.getElementById('selectedMenteePreview').innerHTML = `
-        <div class="mentee-preview-card">
-            <div class="preview-header">
-                <i class="fas fa-user-graduate"></i>
-                <div>
-                    <h4>${menteeName}</h4>
-                    <p>Wants to learn: <span class="subject">${subject}</span></p>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('acceptModal').style.display = 'flex';
-    
-    // Set minimum datetime to current time
-    const now = new Date();
-    const minDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    document.getElementById('meetingTime').min = minDateTime;
-}
-
 function closeModal() {
     document.getElementById('acceptModal').style.display = 'none';
     currentRequestId = null;
+}
+
+// mentorService.js
+async function declineConnectionRequest(requestId, reason) {
+  console.log("declineConnectionRequest is called")
+  const body = {};
+  body.reason = reason;
+  body.meeting_link = null;
+  body.mentorTime = null;
+  body.mentorMessage = null;
+  body.status = 'declined';
+  const res = await fetch(`/api/mentor/connection-requests/${requestId}/status`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({body}),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || 'Failed to decline request');
+  }
+
+  return res.json();
 }
 
 
@@ -848,7 +850,6 @@ function showDeclineModal(requestId) {
         </div>
     </div>
     `;
-
     
     document.body.appendChild(modal);
     
@@ -863,19 +864,21 @@ function showDeclineModal(requestId) {
     modal.querySelector('.btn-confirm-decline').addEventListener('click', async () => {
 
         const reason = modal.querySelector('.decline-reason-input').value.trim();
-            if (!reason) {
-                alert('Please enter a reason before declining.');
-                return;
-            }
+        if (!reason) {
+            alert('Please enter a reason before declining.');
+            return;
+        }
+
+        await declineConnectionRequest(requestId, reason);
+        console.log('Request declined with reason:', reason);
 
         modal.remove();
-
-        await rejectRequest(requestId, reason);
+        await rejectRequest(requestId);
     });
 }
 
 
-async function rejectRequest(requestId, reason) {    
+async function rejectRequest(requestId) {    
     try {
         console.log('Making API call to decline request...');
         const response = await fetch(`/api/mentor/requests/${requestId}/decline`, {
@@ -903,6 +906,8 @@ async function rejectRequest(requestId, reason) {
         showMessage('An error occurred', 'error');
     }
 }
+
+
 
 async function uploadProfilePic() {
     const fileInput = document.getElementById('profilePicUpload');
@@ -1063,6 +1068,25 @@ function toDatetimeLocalString(dateString) {
   return `${hours}:${minutes} hours on ${day}-${month}-${year}`;
 }
 
+async function acceptConnectionRequest(requestId, body) {
+  console.log("acceptConnectionRequest is called")
+  const res = await fetch(`/api/mentor/connection-requests/${requestId}/status`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({body}),
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || 'Failed to accept request');
+  }
+
+  return res.json();
+}
+
 function showIncomingRequestModal(payload) {
     console.log("Showing incoming request modal with payload:", payload);
     const modal = document.createElement('div');
@@ -1116,18 +1140,25 @@ function showIncomingRequestModal(payload) {
             console.log("Accepting request with payload:", payload);
             const meetingTimeInput = modal.querySelector('.meeting-time-input');
             const meetingLinkInput = modal.querySelector('.meeting-link-input');
+            const meetingMessageInput = modal.querySelector('.meeting-message-input');
             const meetingTime = meetingTimeInput?.value;
             const meetingLink = meetingLinkInput?.value;
+            const meetingMessage = meetingMessageInput?.value;
             
             // BUILD THE REQUEST BODY
             const body = {};
             if (meetingTime) {
                 body.meetingTime = meetingTime;
-                if (meetingLink) {
-                    body.meetingLink = meetingLink;
-                }
+                body.meetingMessage = meetingMessage || "Looking forward to our meeting!";
+                body.meetingLink = meetingLink;
             }
-            
+
+            body.status = 'accepted';
+
+            acceptConnectionRequest(payload.requestId, body);
+
+            console.log("mentor message and other details are logged");
+
             // SEND THE REQUEST WITH THE BODY
             const resp = await fetch(`/api/mentor/requests/${payload.requestId}/accept`, {
                 method: 'POST',

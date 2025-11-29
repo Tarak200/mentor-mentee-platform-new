@@ -130,6 +130,34 @@ class DatabaseService {
                 FOREIGN KEY (menteeId) REFERENCES users(id) ON DELETE CASCADE
             )`,
 
+            // Connection requests table
+            `CREATE TABLE IF NOT EXISTS connection_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mentor_id INTEGER NOT NULL,
+                mentee_id INTEGER NOT NULL,
+                status VARCHAR(20) NOT NULL CHECK(status IN ('pending', 'accepted', 'declined')),
+                
+                -- Mentee's initial request details
+                mentee_message TEXT,
+                mentee_preferred_time VARCHAR(50),
+                
+                -- Fields for ACCEPTED requests
+                meeting_datetime VARCHAR(50), -- Format: 'YYYY-MM-DDTHH:MM'
+                meeting_link TEXT,
+                mentor_message TEXT,
+                
+                -- Fields for DECLINED requests
+                reason TEXT,
+                
+                -- Timestamps
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                responded_at DATETIME,
+                
+                FOREIGN KEY (mentor_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (mentee_id) REFERENCES users(id) ON DELETE CASCADE
+            )`,
+
             // Reviews table
             `CREATE TABLE IF NOT EXISTS reviews (
                 id TEXT PRIMARY KEY,
@@ -224,7 +252,9 @@ class DatabaseService {
             'CREATE INDEX IF NOT EXISTS idx_security_user ON security_events(userId)',
             'CREATE INDEX IF NOT EXISTS idx_security_type ON security_events(type)',
             'CREATE INDEX IF NOT EXISTS idx_reset_tokens_user ON password_reset_tokens(userId)',
-            'CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens(token)'
+            'CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens(token)',
+            'CREATE INDEX IF NOT EXISTS idx_mentor_connections ON connection_requests(mentor_id, status)',
+            'CREATE INDEX IF NOT EXISTS idx_mentee_connections ON connection_requests(mentee_id, status)'
         ];
 
         for (const indexSQL of indexes) {
