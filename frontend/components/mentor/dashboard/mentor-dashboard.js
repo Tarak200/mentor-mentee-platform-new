@@ -1160,13 +1160,14 @@ function showIncomingRequestModal(payload) {
             console.log("mentor message and other details are logged");
 
             // SEND THE REQUEST WITH THE BODY
+            // ✅ CORRECT
             const resp = await fetch(`/api/mentor/requests/${payload.requestId}/accept`, {
                 method: 'POST',
                 headers: { 
                     'Authorization': `Bearer ${token}`, 
                     'Content-Type': 'application/json' 
                 },
-                body: JSON.stringify(body)  // ← THIS WAS MISSING
+                body: JSON.stringify(body)
             });
 
             console.log("Response:", resp);

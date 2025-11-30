@@ -410,11 +410,19 @@ class MentorService {
     // Accept mentoring request
     async acceptRequest(mentorId, requestId) {
         console.log("acceptance request api is called");
+        console.log("mentorId:", mentorId, "requestId:", requestId);
         try {
             const request = await db.get(
                 'SELECT * FROM mentoring_requests WHERE id = ? AND mentorId = ?',
                 [requestId, mentorId]
             );
+
+            const finalScheduled = await db.get(
+                'SELECT meeting_datetime FROM connection_requests WHERE id = ? AND mentor_id = ?',
+                [requestId, mentorId]
+            )
+
+            console.log('fetched request for acceptance:', request);
 
             if (!request) {
                 return { success: false, message: 'Request not found' };
@@ -432,12 +440,13 @@ class MentorService {
 
                 // Create mentor-mentee relationship
                 const relationshipId = Date.now().toString();
+
                 await db.run(
-                    `INSERT INTO mentor_mentee_relationships 
-                     (id, mentorId, menteeId, status, created_at, updated_at)
-                     VALUES (?, ?, ?, 'active', ?, ?)`,
+                    `UPDATE INTO mentor_mentee_relationships 
+                     (id, mentorId, menteeId, finalScheduled, status, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, 'active', ?, ?)`,
                     [
-                        relationshipId, mentorId, request.menteeId,
+                        relationshipId, mentorId, request.menteeId, finalScheduled.meeting_datetime,
                         new Date().toISOString(), new Date().toISOString()
                     ]
                 );

@@ -107,6 +107,7 @@ class DatabaseService {
                 id TEXT PRIMARY KEY,
                 mentorId TEXT NOT NULL,
                 menteeId TEXT NOT NULL,
+                finalScheduled TEXT NOT NULL,
                 status TEXT CHECK(status IN ('active', 'inactive', 'completed')) DEFAULT 'active',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,

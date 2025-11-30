@@ -354,8 +354,9 @@ function generateMeetLink() {
 
 // Accept mentoring request
 router.post('/requests/:requestId/accept', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
+    console.log("Accept request API is called");
     try {
-        const mentorId = req.user.id;
+        const mentorId = req.user.userId;
         const { requestId } = req.params;
         const { meetingTime, meetingLink } = req.body || {};
 
@@ -495,14 +496,12 @@ router.post('/requests/:requestId/decline', authMiddleware.authenticateToken, re
 // Decline connection request
 // POST /api/mentor/connection-requests/:id/status
 router.post('/connection-requests/:id/status', authMiddleware.authenticateToken, requireMentor, async (req, res) => {
-    console.log('request body:', req.body);
-    console.log(`status API is called to ${req.body.body.status}`); // FIX: Changed to get status from req.body.body.status
+
     try {
         const requestId = req.params.id;
         const reason = req.body.body.reason || req.body.body.meetingMessage; 
         const status = req.body.body.status;
         
-        console.log('start', { requestId});
         
         if (!reason || !reason.trim()) {
             console.warn('missing reason');
@@ -523,7 +522,6 @@ router.post('/connection-requests/:id/status', authMiddleware.authenticateToken,
         const meetingLink = req.body.body.meeting_link; // FIX: Get from request body
         const mentorMessage = req.body.body.mentorMessage; // FIX: Get from request body
         
-        console.log('fetched pair', { mentorId, menteeId });
         
         // Try to update existing connection_request
         const updateSql = `
@@ -542,7 +540,6 @@ router.post('/connection-requests/:id/status', authMiddleware.authenticateToken,
             WHERE id = ?
         `;
         
-        console.log('update query is ready');
         const updateResult = await db.run(updateSql, [
             mentorId, 
             menteeId, 
@@ -555,8 +552,6 @@ router.post('/connection-requests/:id/status', authMiddleware.authenticateToken,
             reason.trim(), 
             requestId,
         ]);
-        
-        console.log('update changes', updateResult.changes);
         
         // If no rows were updated, insert a new record
         if (updateResult.changes === 0) {
